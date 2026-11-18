@@ -77,16 +77,16 @@ Session Autospace 增加第三种选择：**一次对话，一个文件夹，一
 
 - DSH `>=0.2.1-rc.2 <1.0.0`（见 `package.json` 的 `engines.dsh`）。
 - 可用的 `dsh` CLI。
+- 可访问 GitHub，以及本机可用的 `git`（pnpm 解析 GitHub 依赖时需要）。
 - macOS、Linux 或 Windows。文件夹回收依赖系统废纸篓；不可用时界面会引导「在访达中显示」，不会退化成硬删除。
 
-### 从源码安装
+### 从 GitHub 安装（推荐）
 
 ```sh
-git clone https://github.com/<your-org>/dsh-session-autospace.git
-dsh plugin --profile <profile> add ./dsh-session-autospace
+dsh plugin --profile <profile> add github:DaozeTang/dsh-session-autospace
 ```
 
-`<profile>` 是你要安装到的 profile 名，例如 Desktop 常用的 `desktop`。不确定时先看 profile 列表：
+`dsh plugin add` 会把参数转交给 profile 目录下的 pnpm，由 pnpm 直接从 GitHub 拉取仓库；**不需要 `git clone`，也不需要在本地保留源码或提前构建**。`<profile>` 是你要安装到的 profile 名，例如 Desktop 常用的 `desktop`。不确定时先看 profile 列表：
 
 ```sh
 ls "${DSH_HOME:-$HOME/.dsh}/profiles"
@@ -98,7 +98,24 @@ ls "${DSH_HOME:-$HOME/.dsh}/profiles"
 dsh --profile <profile> --dump-config | grep -n "session-autospace"
 ```
 
-应该能看到 `session-autospace` 的 layer 或行。插件提供的是普通 JavaScript，没有构建步骤；从 git checkout 安装不需要额外编译。
+应该能看到 `session-autospace` 的 layer 或行。插件提供的是普通 JavaScript，没有构建步骤，从 GitHub 安装同样不需要额外编译。
+
+需要指定分支、tag 或提交时，把引用加在仓库地址后面：
+
+```sh
+dsh plugin --profile <profile> add github:DaozeTang/dsh-session-autospace#main
+```
+
+把 `main` 换成 tag 或提交哈希即可锁定到具体版本。
+
+### 从本地目录安装（开发用）
+
+```sh
+git clone https://github.com/DaozeTang/dsh-session-autospace.git
+dsh plugin --profile <profile> add ./dsh-session-autospace
+```
+
+适合改完源码后立刻试用；日常安装用上面的 GitHub 命令即可。
 
 ### 从 tarball 安装
 
@@ -110,10 +127,12 @@ dsh plugin --profile <profile> add ./dsh-session-autospace-0.2.0.tgz
 ### 升级与移除
 
 ```sh
-# 升级：先移除，再重新添加
+# 升级：先移除，再重新从 GitHub 添加
 dsh plugin --profile <profile> remove dsh-session-autospace
-dsh plugin --profile <profile> add ./dsh-session-autospace
+dsh plugin --profile <profile> add github:DaozeTang/dsh-session-autospace
 ```
+
+带 `#` 的安装按指定的分支、tag 或提交解析；换版本时修改 `#` 后面的引用即可。
 
 移除插件不会删除已经创建的会话或文件夹；它们仍是普通 DSH 会话。需要清理时见[卸载](#卸载)。
 

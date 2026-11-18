@@ -77,16 +77,16 @@ The working-path card accepts an absolute path and offers Choose, Show in Finder
 
 - DSH `>=0.2.1-rc.2 <1.0.0` (see `engines.dsh` in `package.json`).
 - A working `dsh` CLI.
+- Network access to GitHub and a `git` binary on your machine (pnpm needs it to resolve git-hosted dependencies).
 - macOS, Linux, or Windows. Folder removal uses the system Trash; when it is unavailable the UI points you to **Show in Finder** instead of degrading to a hard delete.
 
-### From source
+### From GitHub (recommended)
 
 ```sh
-git clone https://github.com/<your-org>/dsh-session-autospace.git
-dsh plugin --profile <profile> add ./dsh-session-autospace
+dsh plugin --profile <profile> add github:DaozeTang/dsh-session-autospace
 ```
 
-`<profile>` is the profile to install into, for example `desktop`. List your profiles first if unsure:
+`dsh plugin add` forwards its arguments to pnpm inside the profile directory, so pnpm pulls the repository straight from GitHub. **No `git clone`, no local checkout, and no build step are required.** `<profile>` is the profile to install into, for example `desktop`. List your profiles first if unsure:
 
 ```sh
 ls "${DSH_HOME:-$HOME/.dsh}/profiles"
@@ -98,7 +98,24 @@ Restart DSH or reopen the window. To confirm the layer is in the composition:
 dsh --profile <profile> --dump-config | grep -n "session-autospace"
 ```
 
-You should see the `session-autospace` layer or row. The plugin ships plain JavaScript; installing from a git checkout needs no build step.
+You should see the `session-autospace` layer or row. The plugin ships plain JavaScript, so installing from GitHub needs no compilation.
+
+To choose a branch, tag, or commit, append the reference to the repository:
+
+```sh
+dsh plugin --profile <profile> add github:DaozeTang/dsh-session-autospace#main
+```
+
+Replace `main` with a tag or commit hash to pin a specific version.
+
+### From a local checkout (development)
+
+```sh
+git clone https://github.com/DaozeTang/dsh-session-autospace.git
+dsh plugin --profile <profile> add ./dsh-session-autospace
+```
+
+Useful when iterating on the source; for a normal install use the GitHub command above.
 
 ### From a tarball
 
@@ -110,10 +127,12 @@ dsh plugin --profile <profile> add ./dsh-session-autospace-0.2.0.tgz
 ### Upgrade and remove
 
 ```sh
-# upgrade: remove, then add again
+# upgrade: remove, then add again from GitHub
 dsh plugin --profile <profile> remove dsh-session-autospace
-dsh plugin --profile <profile> add ./dsh-session-autospace
+dsh plugin --profile <profile> add github:DaozeTang/dsh-session-autospace
 ```
+
+An install with a `#` reference follows that branch, tag, or commit; change the reference to move to another version.
 
 Removing the plugin does not delete existing conversations or folders; they remain normal DSH conversations. See [Uninstall](#uninstall) for cleanup.
 
