@@ -1,0 +1,171 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" fill="none" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="900" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8F9FC"/><stop offset="1" stop-color="#EEF1F8"/>
+    </linearGradient>
+    <filter id="card" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="10" stdDeviation="16" flood-color="#1B2340" flood-opacity=".07"/>
+    </filter>
+    <symbol id="i-folder" viewBox="0 0 24 24">
+      <path d="M3.5 7.2c0-.9.7-1.6 1.6-1.6h3.6c.4 0 .8.2 1.1.5l1.3 1.3h7.9c.9 0 1.6.7 1.6 1.6v8.4c0 .9-.7 1.6-1.6 1.6H5.1c-.9 0-1.6-.7-1.6-1.6V7.2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24">
+      <path d="M13 3 5.5 13.4H11L9.8 21l7.8-10.7H12L13 3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24">
+      <path d="M12 3.5 19 6v5.4c0 4.5-2.9 7.6-7 9.1-4.1-1.5-7-4.6-7-9.1V6l7-2.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="m9.2 12 2 2 3.6-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+  </defs>
+
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <text x="70" y="70" fill="#171A21" font-size="40" font-weight="700" letter-spacing="-.8">A thin Host half and a browser half</text>
+  <text x="70" y="108" fill="#646A77" font-size="22">The browser renders slots; the Host owns every path, request, and file operation.</text>
+
+  <!-- client -->
+  <rect x="70" y="150" width="420" height="470" rx="22" fill="#FFFFFF" stroke="#E8EAF0" filter="url(#card)"/>
+  <rect x="96" y="174" width="40" height="40" rx="11" fill="#EDF0FF"/>
+  <g color="#4D6BFE"><use href="#i-bolt" x="106" y="184" width="20" height="20"/></g>
+  <text x="150" y="202" fill="#171A21" font-size="25" font-weight="650">Browser half</text>
+  <rect x="356" y="180" width="108" height="28" rx="14" fill="#F1F3F9"/>
+  <text x="410" y="199" fill="#7B8291" font-size="14" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">client.js</text>
+  <text x="96" y="246" fill="#7B8291" font-size="17">React components registered into host slots.</text>
+
+  <rect x="96" y="268" width="368" height="52" rx="10" fill="#F7F8FC"/>
+  <text x="114" y="291" fill="#2A3040" font-size="18" font-weight="600">Workspace menu</text>
+  <text x="114" y="310" fill="#8A92A6" font-size="14" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">conversation.hero.workspace</text>
+
+  <rect x="96" y="328" width="368" height="52" rx="10" fill="#F7F8FC"/>
+  <text x="114" y="351" fill="#2A3040" font-size="18" font-weight="600">Settings page</text>
+  <text x="114" y="370" fill="#8A92A6" font-size="14" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">plugins.bundle.config</text>
+
+  <rect x="96" y="388" width="368" height="52" rx="10" fill="#F7F8FC"/>
+  <text x="114" y="411" fill="#2A3040" font-size="18" font-weight="600">Folder mark</text>
+  <text x="114" y="430" fill="#8A92A6" font-size="14" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">sidebar.session.row.trailing</text>
+
+  <rect x="96" y="448" width="368" height="52" rx="10" fill="#F7F8FC"/>
+  <text x="114" y="471" fill="#2A3040" font-size="18" font-weight="600">New Session default</text>
+  <text x="114" y="490" fill="#8A92A6" font-size="14" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">uiWorkspace.startSession wrapper</text>
+
+  <text x="96" y="548" fill="#8A92A6" font-size="15">No network of its own. No telemetry.</text>
+  <text x="96" y="572" fill="#8A92A6" font-size="15">Every call is same-origin under /api/session-autospace.</text>
+  <rect x="96" y="590" width="368" height="1" fill="#EEF0F4"/>
+  <text x="96" y="612" fill="#7B8291" font-size="15">Settles on first turn · abandons via retainInfo</text>
+
+  <!-- protocol -->
+  <rect x="550" y="150" width="500" height="470" rx="22" fill="#FFFFFF" stroke="#E8EAF0" filter="url(#card)"/>
+  <rect x="576" y="174" width="40" height="40" rx="11" fill="#E9EDFF"/>
+  <g color="#4D6BFE"><use href="#i-shield" x="586" y="184" width="20" height="20"/></g>
+  <text x="630" y="202" fill="#171A21" font-size="25" font-weight="650">Same-origin POST</text>
+  <rect x="896" y="180" width="124" height="28" rx="14" fill="#F1F3F9"/>
+  <text x="958" y="199" fill="#7B8291" font-size="13" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">/api/…</text>
+  <text x="576" y="246" fill="#7B8291" font-size="17">JSON in, JSON out; the trust fence runs first.</text>
+
+  <rect x="576" y="268" width="212" height="34" rx="8" fill="#F7F8FC"/>
+  <text x="590" y="291" fill="#3F4655" font-size="16" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">/prepare</text>
+  <rect x="800" y="268" width="212" height="34" rx="8" fill="#F7F8FC"/>
+  <text x="814" y="291" fill="#3F4655" font-size="16" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">/settle</text>
+
+  <rect x="576" y="310" width="212" height="34" rx="8" fill="#F7F8FC"/>
+  <text x="590" y="333" fill="#3F4655" font-size="16" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">/abandon</text>
+  <rect x="800" y="310" width="212" height="34" rx="8" fill="#F7F8FC"/>
+  <text x="814" y="333" fill="#3F4655" font-size="16" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">/status</text>
+
+  <rect x="576" y="352" width="212" height="34" rx="8" fill="#F7F8FC"/>
+  <text x="590" y="375" fill="#3F4655" font-size="16" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">/inventory</text>
+  <rect x="800" y="352" width="212" height="34" rx="8" fill="#F7F8FC"/>
+  <text x="814" y="375" fill="#3F4655" font-size="16" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">/session-op</text>
+
+  <rect x="576" y="394" width="212" height="34" rx="8" fill="#F7F8FC"/>
+  <text x="590" y="417" fill="#3F4655" font-size="16" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">/trash</text>
+  <rect x="800" y="394" width="212" height="34" rx="8" fill="#F7F8FC"/>
+  <text x="814" y="417" fill="#3F4655" font-size="16" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">/maintenance</text>
+
+  <rect x="576" y="436" width="212" height="34" rx="8" fill="#F7F8FC"/>
+  <text x="590" y="459" fill="#3F4655" font-size="16" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">/config</text>
+  <rect x="800" y="436" width="212" height="34" rx="8" fill="#F7F8FC"/>
+  <text x="814" y="459" fill="#3F4655" font-size="16" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">/memory</text>
+
+  <rect x="576" y="478" width="212" height="34" rx="8" fill="#F7F8FC"/>
+  <text x="590" y="501" fill="#3F4655" font-size="16" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">/probe</text>
+  <rect x="800" y="478" width="212" height="34" rx="8" fill="#F7F8FC"/>
+  <text x="814" y="501" fill="#3F4655" font-size="16" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">/reveal</text>
+
+  <text x="576" y="552" fill="#8A92A6" font-size="15">Body ≤ 64 KiB · explicit op allowlist</text>
+  <text x="576" y="576" fill="#8A92A6" font-size="15">Errors return a code, never another path</text>
+  <rect x="576" y="592" width="448" height="1" fill="#EEF0F4"/>
+  <text x="576" y="614" fill="#7B8291" font-size="15">12 routes, all POST, all same-origin</text>
+
+  <!-- host -->
+  <rect x="1110" y="150" width="420" height="470" rx="22" fill="#FFFFFF" stroke="#E8EAF0" filter="url(#card)"/>
+  <rect x="1136" y="174" width="40" height="40" rx="11" fill="#E8F7F0"/>
+  <g color="#1F9D6B"><use href="#i-folder" x="1146" y="184" width="20" height="20"/></g>
+  <text x="1190" y="202" fill="#171A21" font-size="25" font-weight="650">Host half</text>
+  <rect x="1396" y="180" width="108" height="28" rx="14" fill="#F1F3F9"/>
+  <text x="1450" y="199" fill="#7B8291" font-size="14" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">index.js</text>
+  <text x="1136" y="246" fill="#7B8291" font-size="17">Cordis plugin; capability-injected services.</text>
+
+  <rect x="1136" y="268" width="368" height="52" rx="10" fill="#F7F8FC"/>
+  <text x="1154" y="291" fill="#2A3040" font-size="18" font-weight="600">Routes + staged map</text>
+  <text x="1154" y="310" fill="#8A92A6" font-size="14" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">prepare · settle · abandon</text>
+
+  <rect x="1136" y="328" width="368" height="52" rx="10" fill="#F7F8FC"/>
+  <text x="1154" y="351" fill="#2A3040" font-size="18" font-weight="600">Services</text>
+  <text x="1154" y="370" fill="#8A92A6" font-size="14" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">sessionController · workspaceRegistry</text>
+
+  <rect x="1136" y="388" width="368" height="52" rx="10" fill="#F7F8FC"/>
+  <text x="1154" y="411" fill="#2A3040" font-size="18" font-weight="600">Sweep + Trash</text>
+  <text x="1154" y="430" fill="#8A92A6" font-size="14" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">activation sweep · system Trash</text>
+
+  <rect x="1136" y="448" width="368" height="52" rx="10" fill="#F7F8FC"/>
+  <text x="1154" y="471" fill="#2A3040" font-size="18" font-weight="600">Config editor</text>
+  <text x="1154" y="490" fill="#8A92A6" font-size="14" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">ctx.fiber.entry · ctx.configEditor</text>
+
+  <text x="1136" y="548" fill="#8A92A6" font-size="15">Zero runtime dependencies.</text>
+  <text x="1136" y="572" fill="#8A92A6" font-size="15">Only node:* modules; every effect is disposable.</text>
+  <rect x="1136" y="590" width="368" height="1" fill="#EEF0F4"/>
+  <text x="1136" y="612" fill="#7B8291" font-size="15">Missing services degrade; nothing crashes.</text>
+
+  <!-- arrows -->
+  <path d="M496 330h42" stroke="#4D6BFE" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="m530 322 10 8-10 8" stroke="#4D6BFE" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="518" y="314" fill="#4D6BFE" font-size="14" text-anchor="middle" font-weight="600">POST</text>
+
+  <path d="M544 420h-42" stroke="#1F9D6B" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="m510 412-10 8 10 8" stroke="#1F9D6B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="522" y="446" fill="#1F9D6B" font-size="14" text-anchor="middle" font-weight="600">JSON</text>
+
+  <path d="M1056 330h42" stroke="#4D6BFE" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="m1090 322 10 8-10 8" stroke="#4D6BFE" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="1078" y="314" fill="#4D6BFE" font-size="14" text-anchor="middle" font-weight="600">run</text>
+
+  <path d="M1104 420h-42" stroke="#1F9D6B" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="m1070 412-10 8 10 8" stroke="#1F9D6B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="1082" y="446" fill="#1F9D6B" font-size="14" text-anchor="middle" font-weight="600">value</text>
+
+  <!-- effects -->
+  <text x="70" y="676" fill="#171A21" font-size="24" font-weight="650">Durable effects</text>
+  <text x="70" y="704" fill="#7B8291" font-size="17">Only what a user action asks for: one folder, one temporary registration, one session.</text>
+
+  <rect x="70" y="728" width="470" height="132" rx="18" fill="#FFFFFF" stroke="#E8EAF0" filter="url(#card)"/>
+  <g color="#4D6BFE"><use href="#i-folder" x="94" y="754" width="24" height="24"/></g>
+  <text x="130" y="773" fill="#1E2637" font-size="19" font-weight="600">Working folders</text>
+  <text x="94" y="807" fill="#596172" font-size="17" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">~/DSH/session-&lt;id&gt;/</text>
+  <text x="94" y="835" fill="#8A92A6" font-size="15">mode 0700 · conversation cwd + sandbox</text>
+
+  <rect x="565" y="728" width="470" height="132" rx="18" fill="#FFFFFF" stroke="#E8EAF0" filter="url(#card)"/>
+  <g color="#B7791F"><use href="#i-folder" x="589" y="754" width="24" height="24"/></g>
+  <text x="625" y="773" fill="#1E2637" font-size="19" font-weight="600">Remembered choice</text>
+  <text x="589" y="807" fill="#596172" font-size="15" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">$DSH_HOME/session-autospace/</text>
+  <text x="589" y="831" fill="#596172" font-size="15" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">last-pick-&lt;profile&gt;.json</text>
+  <text x="589" y="852" fill="#8A92A6" font-size="14">mode 0600 · atomic write</text>
+
+  <rect x="1060" y="728" width="470" height="132" rx="18" fill="#FFFFFF" stroke="#E8EAF0" filter="url(#card)"/>
+  <g color="#1F9D6B"><use href="#i-shield" x="1084" y="754" width="24" height="24"/></g>
+  <text x="1120" y="773" fill="#1E2637" font-size="19" font-weight="600">Native DSH state</text>
+  <text x="1084" y="807" fill="#596172" font-size="16">Session logs, workspace registry, config:</text>
+  <text x="1084" y="832" fill="#596172" font-size="16">read and written only through DSH services.</text>
+  <text x="1084" y="852" fill="#8A92A6" font-size="14">No message content is copied.</text>
+
+  <text x="70" y="888" fill="#9AA1B0" font-size="14">Illustration · no real paths, sessions, or user data</text>
+</svg>

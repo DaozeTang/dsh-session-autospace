@@ -1,0 +1,55 @@
+{
+  "name": "dsh-session-autospace",
+  "version": "0.2.0",
+  "description": "Start a conversation without picking a workspace: every new conversation gets its own folder under a configurable root, used as its cwd and sandbox boundary. The last choice is remembered.",
+  "type": "module",
+  "license": "MIT",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "workspace",
+    "sandbox",
+    "session",
+    "scratch"
+  ],
+  "scripts": {
+    "test": "node test/host-check.mjs && node test/render-check.mjs",
+    "test:host": "node test/host-check.mjs",
+    "test:render": "node test/render-check.mjs"
+  },
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "docs",
+    "test",
+    "icon.svg"
+  ],
+  "engines": {
+    "dsh": ">=0.2.1-rc.2 <1.0.0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-renderer",
+        "@deepseek-ai/dsh-client-ui-session",
+        "@deepseek-ai/dsh-client-ui-workspace",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-plugin-manager"
+      ]
+    }
+  }
+}

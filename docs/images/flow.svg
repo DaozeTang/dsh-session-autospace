@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" fill="none" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="900" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8F9FC"/><stop offset="1" stop-color="#EEF1F8"/>
+    </linearGradient>
+    <filter id="panel" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="18" flood-color="#1B2340" flood-opacity=".09"/>
+    </filter>
+    <filter id="inner" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#1B2340" flood-opacity=".06"/>
+    </filter>
+    <symbol id="i-folder" viewBox="0 0 24 24">
+      <path d="M3.5 7.2c0-.9.7-1.6 1.6-1.6h3.6c.4 0 .8.2 1.1.5l1.3 1.3h7.9c.9 0 1.6.7 1.6 1.6v8.4c0 .9-.7 1.6-1.6 1.6H5.1c-.9 0-1.6-.7-1.6-1.6V7.2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24">
+      <path d="M4.5 12.5c0-.6.4-1 1-1h3.1l1.2-1.2c.2-.2.4-.3.7-.3h3.9c.6 0 1 .4 1 1v2.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      <rect x="4.5" y="9.4" width="15" height="8.2" rx="2.2" stroke="currentColor" stroke-width="1.6"/>
+      <circle cx="9.4" cy="13.5" r=".9" fill="currentColor"/><circle cx="12" cy="13.5" r=".9" fill="currentColor"/><circle cx="14.6" cy="13.5" r=".9" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-check" viewBox="0 0 24 24">
+      <path d="m5.5 12.5 4.2 4.2 8.8-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="i-send" viewBox="0 0 24 24">
+      <path d="M5 12 20 4l-4 16-5.5-6.5L5 12Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+      <path d="m10.5 13.5 4-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-archive" viewBox="0 0 24 24">
+      <rect x="3.6" y="5.2" width="16.8" height="4.2" rx="1.2" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M5.2 9.4v8.2c0 .9.7 1.6 1.6 1.6h10.4c.9 0 1.6-.7 1.6-1.6V9.4M9.8 13.2h4.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24">
+      <path d="M4.8 6.8h14.4M9.6 4.6h4.8M6.8 6.8l.9 12.2c.05.7.6 1.2 1.3 1.2h6c.7 0 1.25-.5 1.3-1.2l.9-12.2M10.4 10.4v6M13.6 10.4v6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+  </defs>
+
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <text x="70" y="70" fill="#171A21" font-size="40" font-weight="700" letter-spacing="-.8">From click to settled in one message</text>
+  <text x="70" y="108" fill="#646A77" font-size="22">The folder is created early; the temporary sidebar group disappears on the first send.</text>
+
+  <rect x="70" y="150" width="460" height="440" rx="22" fill="#FFFFFF" filter="url(#panel)"/>
+  <text x="100" y="194" fill="#4D6BFE" font-size="18" font-weight="700" letter-spacing="1.6">01 · PICK</text>
+  <text x="100" y="236" fill="#171A21" font-size="30" font-weight="650">No workspace</text>
+  <text x="100" y="268" fill="#7B8291" font-size="18">One extra row in the menu.</text>
+
+  <rect x="100" y="292" width="400" height="242" rx="14" fill="#FFFFFF" stroke="#E5E7EE" filter="url(#inner)"/>
+  <g color="#6E7688"><use href="#i-folder" x="120" y="314" width="22" height="22"/></g>
+  <text x="154" y="331" fill="#2A3040" font-size="19">Design system</text>
+  <g color="#6E7688"><use href="#i-folder" x="120" y="360" width="22" height="22"/></g>
+  <text x="154" y="377" fill="#2A3040" font-size="19">API playground</text>
+  <path d="M114 412h372" stroke="#E7E9F0" stroke-width="2"/>
+  <rect x="108" y="424" width="384" height="54" rx="9" fill="#EDF0FF"/>
+  <g color="#4D6BFE"><use href="#i-spark" x="122" y="439" width="24" height="24"/></g>
+  <text x="156" y="458" fill="#1E2637" font-size="19" font-weight="600">No workspace</text>
+  <g color="#4D6BFE"><use href="#i-check" x="456" y="439" width="24" height="24"/></g>
+
+  <text x="100" y="574" fill="#7B8291" font-size="18">A real folder is created before you type.</text>
+
+  <rect x="570" y="150" width="460" height="440" rx="22" fill="#FFFFFF" filter="url(#panel)"/>
+  <text x="600" y="194" fill="#4D6BFE" font-size="18" font-weight="700" letter-spacing="1.6">02 · STAGE</text>
+  <text x="600" y="236" fill="#171A21" font-size="30" font-weight="650">Folder + temp group</text>
+  <text x="600" y="268" fill="#7B8291" font-size="18">Input is live. Nothing is shared.</text>
+
+  <rect x="600" y="292" width="400" height="112" rx="14" fill="#F7F8FB" stroke="#E8EAF0"/>
+  <text x="620" y="324" fill="#6A7181" font-size="17" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">~/DSH</text>
+  <g color="#4D6BFE"><use href="#i-folder" x="620" y="344" width="24" height="24"/></g>
+  <text x="654" y="363" fill="#1E2637" font-size="19" font-weight="600" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">session-8f6c…</text>
+  <rect x="858" y="342" width="122" height="28" rx="14" fill="#4D6BFE"/>
+  <text x="919" y="361" fill="#FFFFFF" font-size="14" text-anchor="middle" font-weight="600">cwd + sandbox</text>
+
+  <rect x="600" y="422" width="400" height="128" rx="14" fill="#FFFFFF" stroke="#E5E7EE"/>
+  <text x="620" y="452" fill="#8A92A6" font-size="16">No workspace · temporary</text>
+  <rect x="612" y="466" width="376" height="52" rx="8" fill="#F1F3F9"/>
+  <g color="#4D6BFE"><use href="#i-spark" x="628" y="480" width="22" height="22"/></g>
+  <text x="660" y="500" fill="#2A3040" font-size="19">New Session</text>
+  <text x="956" y="500" fill="#8A92A6" font-size="15" text-anchor="end">staged</text>
+
+  <text x="600" y="574" fill="#7B8291" font-size="18">Native input and native send.</text>
+
+  <rect x="1070" y="150" width="460" height="440" rx="22" fill="#FFFFFF" filter="url(#panel)"/>
+  <text x="1100" y="194" fill="#1F9D6B" font-size="18" font-weight="700" letter-spacing="1.6">03 · SEND</text>
+  <text x="1100" y="236" fill="#171A21" font-size="27" font-weight="650">Settles into Ungrouped</text>
+  <text x="1100" y="268" fill="#7B8291" font-size="18">The temporary group is removed.</text>
+
+  <rect x="1100" y="292" width="400" height="238" rx="14" fill="#FFFFFF" stroke="#E5E7EE"/>
+  <text x="1120" y="322" fill="#8A92A6" font-size="16">Ungrouped</text>
+  <rect x="1112" y="336" width="376" height="58" rx="9" fill="#EDF0FF"/>
+  <rect x="1112" y="336" width="4" height="58" rx="2" fill="#4D6BFE"/>
+  <g color="#4D6BFE"><use href="#i-spark" x="1128" y="352" width="24" height="24"/></g>
+  <text x="1164" y="371" fill="#1E2637" font-size="19" font-weight="600">How the sandbox works</text>
+  <g color="#6C7484"><use href="#i-folder" x="1456" y="353" width="22" height="22"/></g>
+  <text x="1120" y="424" fill="#596172" font-size="18">Regex notes</text>
+  <text x="1120" y="456" fill="#596172" font-size="18">Release notes draft</text>
+  <rect x="1112" y="476" width="98" height="28" rx="14" fill="#E8F7F0"/>
+  <text x="1161" y="495" fill="#1F9D6B" font-size="14" text-anchor="middle" font-weight="600">settled</text>
+
+  <text x="1100" y="574" fill="#7B8291" font-size="18">Folder, cwd and sandbox never moved.</text>
+
+  <path d="M536 370h26" stroke="#4D6BFE" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="m554 362 10 8-10 8" stroke="#4D6BFE" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <path d="M1036 370h26" stroke="#1F9D6B" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="m1054 362 10 8-10 8" stroke="#1F9D6B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <path d="M800 590v34" stroke="#C58A2A" stroke-width="2" stroke-dasharray="4 6"/>
+  <path d="m794 616 6 8 6-8" stroke="#C58A2A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <rect x="570" y="640" width="960" height="180" rx="20" fill="#FFF9EE" stroke="#F0D9B5"/>
+  <text x="600" y="682" fill="#A96312" font-size="17" font-weight="700" letter-spacing="1.4">IF YOU SWITCH AWAY BEFORE SENDING</text>
+  <text x="600" y="720" fill="#3A2B18" font-size="22">The blank conversation is archived and its empty folder goes to the system Trash.</text>
+  <g color="#A96312"><use href="#i-archive" x="600" y="748" width="22" height="22"/></g>
+  <text x="632" y="766" fill="#7A5A2E" font-size="18">archive session</text>
+  <g color="#A96312"><use href="#i-trash" x="796" y="748" width="22" height="22"/></g>
+  <text x="828" y="766" fill="#7A5A2E" font-size="18">folder to Trash</text>
+  <text x="1502" y="766" fill="#9A7A4A" font-size="16" text-anchor="end">abandonOnSwitch · on</text>
+
+  <text x="70" y="866" fill="#9AA1B0" font-size="16">Illustration · synthetic paths and session ids</text>
+</svg>

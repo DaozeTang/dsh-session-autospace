@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="300" viewBox="0 0 640 300" fill="none">
+  <!-- The working path: one dashed container that holds a folder per conversation. -->
+  <rect x="40" y="64" width="280" height="172" rx="16" stroke="#8A8F99" stroke-width="2" stroke-dasharray="7 6" opacity="0.85"/>
+
+  <!-- A conversation in the working path. -->
+  <g transform="translate(56 88) scale(0.44)">
+    <path d="M6 18a12 12 0 0 1 12-12h20l9 9h41a12 12 0 0 1 12 12v28a12 12 0 0 1-12 12H18a12 12 0 0 1-12-12Z" stroke="#8A8F99" stroke-width="4.5" stroke-opacity="0.6"/>
+  </g>
+  <rect x="112" y="96" width="116" height="12" rx="6" fill="#8A8F99" fill-opacity="0.22"/>
+
+  <!-- The conversation being created: its own folder, its own chat. -->
+  <g transform="translate(56 140) scale(0.44)">
+    <path d="M6 18a12 12 0 0 1 12-12h20l9 9h41a12 12 0 0 1 12 12v28a12 12 0 0 1-12 12H18a12 12 0 0 1-12-12Z" stroke="#4D7FD6" stroke-width="4.5"/>
+  </g>
+  <rect x="112" y="148" width="92" height="12" rx="6" fill="#4D7FD6" fill-opacity="0.55"/>
+  <rect x="216" y="141" width="46" height="29" rx="10" fill="#4D7FD6" fill-opacity="0.16" stroke="#4D7FD6" stroke-width="2"/>
+  <circle cx="229" cy="155.5" r="2.6" fill="#4D7FD6"/>
+  <circle cx="239" cy="155.5" r="2.6" fill="#4D7FD6"/>
+  <circle cx="249" cy="155.5" r="2.6" fill="#4D7FD6"/>
+
+  <!-- Another conversation in the same working path. -->
+  <g transform="translate(56 192) scale(0.44)">
+    <path d="M6 18a12 12 0 0 1 12-12h20l9 9h41a12 12 0 0 1 12 12v28a12 12 0 0 1-12 12H18a12 12 0 0 1-12-12Z" stroke="#8A8F99" stroke-width="4.5" stroke-opacity="0.6"/>
+  </g>
+  <rect x="112" y="200" width="104" height="12" rx="6" fill="#8A8F99" fill-opacity="0.22"/>
+
+  <!-- The first message settles the conversation into the sidebar's own Ungrouped. -->
+  <path d="M328 158h56" stroke="#4D7FD6" stroke-width="2" stroke-linecap="round" opacity="0.85"/>
+  <path d="m376 150 10 8-10 8" stroke="#4D7FD6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- The sidebar: existing groups, then Ungrouped holding the settled conversation. -->
+  <rect x="400" y="56" width="176" height="188" rx="16" stroke="#8A8F99" stroke-width="2" opacity="0.55"/>
+  <rect x="418" y="78" width="56" height="8" rx="4" fill="#8A8F99" fill-opacity="0.55"/>
+  <rect x="418" y="94" width="140" height="14" rx="5" fill="#8A8F99" fill-opacity="0.2"/>
+  <rect x="418" y="114" width="112" height="14" rx="5" fill="#8A8F99" fill-opacity="0.2"/>
+  <path d="M416 148h144" stroke="#8A8F99" stroke-width="2" opacity="0.3"/>
+
+  <rect x="414" y="162" width="148" height="30" rx="7" fill="#4D7FD6" fill-opacity="0.16" stroke="#4D7FD6" stroke-width="2"/>
+  <g transform="translate(426 171) scale(0.26)">
+    <path d="M6 18a12 12 0 0 1 12-12h20l9 9h41a12 12 0 0 1 12 12v28a12 12 0 0 1-12 12H18a12 12 0 0 1-12-12Z" stroke="#4D7FD6" stroke-width="7"/>
+  </g>
+  <rect x="462" y="172" width="86" height="10" rx="5" fill="#4D7FD6" fill-opacity="0.55"/>
+
+  <rect x="418" y="204" width="112" height="14" rx="5" fill="#8A8F99" fill-opacity="0.2"/>
+  <rect x="418" y="224" width="88" height="14" rx="5" fill="#8A8F99" fill-opacity="0.2"/>
+</svg>

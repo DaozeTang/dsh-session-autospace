@@ -1,0 +1,17 @@
+# dsh-session-autospace — one Host plugin plus one browser half.
+# The row config below is the plugin's own default: workspaceRoot empty means
+# "~/DSH". Editing it from the plugin page writes the same fields into the
+# profile's patch layer, which outranks this default.
+- insert:
+    - id: session-autospace
+      name: dsh-session-autospace
+      config:
+        workspaceRoot: ''
+        pickerEntry: true
+        rememberPick: true
+        management: true
+        trashOnDelete: true
+        rowBadge: true
+        reuseBlank: true
+        abandonOnSwitch: true
+        autoReclaimHours: 24
