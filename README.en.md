@@ -37,7 +37,7 @@ Session Autospace adds a third choice: **one conversation, one folder, one sandb
 - **One extra workspace-menu entry.** The rest of the menu, including **Add workspace…** and keyboard navigation, is unchanged. Turn the switch off and DSH's stock menu returns.
 - **A real session and a real folder.** The plugin mints `session-<uuid>`, creates a directory with that name (`0700`), registers a temporary workspace, and creates a blank session inside it. The session's immutable `cwd` is that directory.
 - **Native input and native send.** The input bar is not replaced, messages are not intercepted, and conversation content is not rewritten. On the first `turn/start` the plugin only removes the temporary workspace registration.
-- **Settles into Ungrouped.** The temporary group disappears; the conversation becomes a normal one. Its folder, `cwd`, and sandbox boundary never move.
+- **Settles into Ungrouped.** The temporary group disappears; the conversation becomes a normal one. Its folder, `cwd`, and sandbox boundary never move. Even with **Manual** ordering on, the settled conversation is led to the top of **Ungrouped** (DSH's own pin write leads the saved order, then the pin is released), so it never sinks below older conversations.
 - **Remembers the last choice.** After **No workspace**, New Session keeps opening scratch conversations from the sidebar, title bar, or `⌘N` until you pick a real workspace. A conversation that already belongs to a real workspace still keeps New Session there.
 - **One settings page.** Working path, nine settings, and the scratch-conversation manager live under **Settings → Plugins → Session autospace**.
 - **Conversation management.** Search, filter, sort, open, rename, pin, archive, reveal, copy path, move to Trash, bulk actions, and maintenance.
@@ -121,7 +121,7 @@ Useful when iterating on the source; for a normal install use the GitHub command
 
 ```sh
 pnpm pack
-dsh plugin --profile <profile> add ./dsh-session-autospace-0.2.0.tgz
+dsh plugin --profile <profile> add ./dsh-session-autospace-0.2.1.tgz
 ```
 
 ### Upgrade and remove

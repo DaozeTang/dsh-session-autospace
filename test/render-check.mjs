@@ -299,6 +299,9 @@ const inventoryFixture = {
 
 // ------------------------------------------------------------------- apply ---
 
+/** Sessions-list subscribers the stub keeps, so a fixture change can notify them. */
+const sessionListeners = new Set()
+
 const registered = []
 const navigationCalls = []
 const uiWorkspace = {
@@ -314,7 +317,10 @@ const stubCtx = {
   },
   sessions: {
     retainInfo: () => ({ getSnapshot: () => ({ referenceCount: 0, retainedBy: {} }), subscribe: () => () => {} }),
-    list: { getSnapshot: () => sessionsFixture, subscribe: () => () => {} },
+    list: {
+      getSnapshot: () => sessionsFixture,
+      subscribe: listener => { sessionListeners.add(listener); return () => sessionListeners.delete(listener) },
+    },
   },
   slots: {
     inject: (_key, callback) => {
@@ -588,6 +594,47 @@ const pageOldHost = renderSlotEntry('plugins.bundle.config', { view: 'page' })
 const oldHostSwitches = collectButtons(pageOldHost, 'switch')
 if (oldHostSwitches.length !== 6) throw new Error(`an old Host must hide the new switch, saw ${oldHostSwitches.length}`)
 results.push(['config page (old Host)', 'new switch hidden, no failing write offered'])
+
+// -------------------------------- settled conversation order lead (manual) ---
+// A scratch conversation's first turn settles it: the Host deletes the
+// temporary Workspace, so the conversation becomes a brand new member of
+// Ungrouped. Under manual ordering DSH appends unknown members below every
+// saved row, so the plugin leads it with the Host pin write and unpins without
+// touching the saved position.
+const pinCalls = []
+uiWorkspace.pinSession = async (sessionId) => { pinCalls.push(['pin', sessionId]) }
+uiWorkspace.unpinSession = async (sessionId) => { pinCalls.push(['unpin', sessionId]) }
+globalThis.fetch = async (url) => ({
+  ok: true,
+  json: async () => ({
+    ok: true,
+    value: String(url).endsWith('/status') ? { ...statusFixture, staged: [] } : { settled: true },
+  }),
+})
+const scratchWorkspace = workspacesFixture.items.find(item => item.workspaceId === 'ws-scratch')
+scratchWorkspace.sessionIds = []
+sessionsFixture.byId[SESSION_B].blank = false
+internal.RUNTIME.watchSession(SESSION_B)
+for (const listener of [...sessionListeners]) listener()
+const leadDeadline = Date.now() + 2_000
+while (pinCalls.length < 2 && Date.now() < leadDeadline) {
+  await new Promise(resolve => setTimeout(resolve, 40))
+}
+if (pinCalls[0]?.[0] !== 'pin' || pinCalls[0]?.[1] !== SESSION_B) {
+  throw new Error(`settled conversation was not led: ${JSON.stringify(pinCalls)}`)
+}
+if (pinCalls[1]?.[0] !== 'unpin' || pinCalls[1]?.[1] !== SESSION_B) {
+  throw new Error(`the lead pin was not released: ${JSON.stringify(pinCalls)}`)
+}
+// A conversation the user pinned themselves already leads its accounts: the
+// plugin must not touch it (and must not unpin it).
+workspacesFixture.pinnedSessionIds = [SESSION_A]
+internal.RUNTIME.watchSession(SESSION_A)
+for (const listener of [...sessionListeners]) listener()
+await new Promise(resolve => setTimeout(resolve, 250))
+if (pinCalls.length !== 2) throw new Error(`a pinned conversation was touched: ${JSON.stringify(pinCalls)}`)
+results.push(['settled order lead', 'pin then unpin once the temporary Workspace is gone; user pins untouched'])
+globalThis.fetch = realFetch
 
 console.log(results.map(([name, detail]) => `${name}: ${detail}`).join('\n'))
 console.log(`host elements rendered: ${rendered.host}`)
