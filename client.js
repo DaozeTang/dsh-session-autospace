@@ -405,8 +405,6 @@ window.__ModuleLoader__.load({
 
     let inflightStatus
     let inflightInventory
-    /** Staged ids seen by the last status read; a missing id settled elsewhere. */
-    let knownStagedIds = null
 
     /**
      * Call one Host route and unwrap its `{ok, value}` envelope.
@@ -447,17 +445,7 @@ window.__ModuleLoader__.load({
           const value = await request('/status')
           store.set({ status: value, statusError: null, statusAt: Date.now() })
           RUNTIME.syncSlots()
-          const stagedIds = new Set((value.staged ?? []).map(entry => String(entry.sessionId)))
-          // A conversation the Host settled without this page (activation
-          // sweep, or a first turn sent from another client) leaves the staged
-          // table; lead it here so it does not sink under manual ordering.
-          if (knownStagedIds !== null) {
-            for (const sessionId of knownStagedIds) {
-              if (!stagedIds.has(sessionId)) void leadSettledScratchOnce(sessionId)
-            }
-          }
-          knownStagedIds = stagedIds
-          for (const sessionId of stagedIds) RUNTIME.watchSession(sessionId)
+          for (const staged of value.staged ?? []) RUNTIME.watchSession(String(staged.sessionId))
           return value
         } catch (error) {
           store.set({ statusError: { message: messageOf(error), code: error?.code } })
@@ -468,107 +456,6 @@ window.__ModuleLoader__.load({
         }
       })()
       return inflightStatus
-    }
-
-    /**
-     * Whether no Workspace in the browser snapshot accounts this Session.
-     * @param sessionId - Session id.
-     * @returns true while the Session belongs to the Ungrouped account.
-     */
-    function isUngroupedNow(sessionId) {
-      const ctx = RUNTIME.ctx
-      const items = ctx?.get?.('workspaces')?.list?.getSnapshot?.()?.items
-      if (!Array.isArray(items)) return false
-      return items.every(item => !(item.sessionIds ?? []).includes(sessionId))
-    }
-
-    /**
-     * Wait for the snapshot to drop a settled conversation's temporary Workspace.
-     *
-     * Deleting the registration reaches the browser asynchronously. Writing the
-     * order before it lands would address the temporary Workspace account, not
-     * Ungrouped, so the lead waits instead of guessing.
-     * @param sessionId - Session id.
-     * @param timeoutMs - bounded wait; the lead is skipped when it expires.
-     * @returns whether the Session is ungrouped.
-     */
-    function waitForUngrouped(sessionId, timeoutMs = 3000) {
-      return new Promise((resolve) => {
-        const deadline = Date.now() + timeoutMs
-        const step = () => {
-          if (isUngroupedNow(sessionId)) {
-            resolve(true)
-            return
-          }
-          if (Date.now() >= deadline) {
-            resolve(false)
-            return
-          }
-          setTimeout(step, 80)
-        }
-        step()
-      })
-    }
-
-    /**
-     * Lead a settled scratch conversation in the sidebar's saved orders.
-     *
-     * Manual ordering appends members it has never seen to the end of the saved
-     * order, and a settled scratch conversation is new to the Ungrouped account
-     * the moment its temporary Workspace disappears. The Host pin write is DSH's
-     * own way to lead a Session in its accounts' saved orders (Ungrouped and the
-     * flat list); unpinning right after only drops the pin, because DSH leaves
-     * saved positions alone when a Session is unpinned.
-     * @param sessionId - settled Session id.
-     */
-    async function leadSettledScratch(sessionId) {
-      const ctx = RUNTIME.ctx
-      const ui = ctx?.get?.('uiWorkspace')
-      const workspaces = ctx?.get?.('workspaces')
-      if (ui === undefined || workspaces === undefined) return
-      if (typeof ui.pinSession !== 'function' || typeof ui.unpinSession !== 'function') return
-      const row = ctx?.sessions?.list?.getSnapshot?.()?.byId?.[sessionId]
-      if (row === undefined || row.blank === true) return
-      const snapshot = workspaces.list.getSnapshot()
-      if ((snapshot?.archivedSessionIds ?? []).includes(sessionId)) return
-      if ((snapshot?.pinnedSessionIds ?? []).includes(sessionId)) return
-      try {
-        await ui.pinSession(sessionId)
-      } catch (error) {
-        console.warn('session-autospace: could not lead the settled conversation:', error)
-        return
-      }
-      try {
-        await ui.unpinSession(sessionId)
-      } catch (error) {
-        console.warn('session-autospace: could not release the settled conversation pin:', error)
-      }
-    }
-
-    /** Settled ids already being led; both settle paths can report the same one. */
-    const leadingSessions = new Set()
-    /** Settled ids whose lead already ran: the status diff can report it again. */
-    const ledSessions = new Set()
-
-    /**
-     * Lead one settled scratch conversation once its temporary Workspace is gone.
-     * @param sessionId - settled Session id.
-     */
-    async function leadSettledScratchOnce(sessionId) {
-      if (leadingSessions.has(sessionId) || ledSessions.has(sessionId)) return
-      const ctx = RUNTIME.ctx
-      const ui = ctx?.get?.('uiWorkspace')
-      if (ui === undefined || typeof ui.pinSession !== 'function' || typeof ui.unpinSession !== 'function') return
-      leadingSessions.add(sessionId)
-      try {
-        if (!(await waitForUngrouped(sessionId))) return
-        await leadSettledScratch(sessionId)
-        ledSessions.add(sessionId)
-      } catch (error) {
-        console.warn('session-autospace: settling order lead failed:', error)
-      } finally {
-        leadingSessions.delete(sessionId)
-      }
     }
 
     /**
@@ -2909,10 +2796,8 @@ window.__ModuleLoader__.load({
        * @param record - watcher record.
        */
       async function settleRemote(sessionId, record) {
-        let settled = false
         try {
           await request('/settle', { sessionId })
-          settled = true
         } catch {
           // The Host settles on its own channel too; a failure here is retried
           // by the next activation sweep.
@@ -2921,9 +2806,6 @@ window.__ModuleLoader__.load({
           unwatch(sessionId)
           void refreshStatus()
         }
-        // The temporary Workspace is gone now, so the conversation is a brand
-        // new member of Ungrouped; lead it before manual ordering buries it.
-        if (settled) void leadSettledScratchOnce(sessionId)
       }
 
       /**
