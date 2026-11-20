@@ -589,6 +589,16 @@ const oldHostSwitches = collectButtons(pageOldHost, 'switch')
 if (oldHostSwitches.length !== 6) throw new Error(`an old Host must hide the new switch, saw ${oldHostSwitches.length}`)
 results.push(['config page (old Host)', 'new switch hidden, no failing write offered'])
 
+// A long session list must scroll inside the card instead of stretching it.
+// The stub renderer has no layout engine, so assert the shipped CSS contract.
+const listRule = source.match(/\.dsa-list \{[^}]*\}/)?.[0] ?? ''
+if (!listRule.includes('max-height') || !listRule.includes('overflow-y: auto')) {
+  throw new Error(`the manager list is not a bounded scroll area: ${listRule}`)
+}
+const headRule = source.match(/\.dsa-list-head \{[^}]*\}/)?.[0] ?? ''
+if (!headRule.includes('position: sticky')) throw new Error('the list header does not stay visible while scrolling')
+results.push(['manager list', 'height-capped scroll area with sticky header'])
+
 console.log(results.map(([name, detail]) => `${name}: ${detail}`).join('\n'))
 console.log(`host elements rendered: ${rendered.host}`)
 console.log(`components rendered: ${[...rendered.components.keys()].join(', ')}`)

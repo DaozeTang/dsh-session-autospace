@@ -975,7 +975,27 @@ window.__ModuleLoader__.load({
   height: 32px; padding: 0 8px; border-radius: 6px; border: 1px solid var(--dsw-alias-border-l1);
   background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary); font: inherit; font-size: 13px; cursor: pointer;
 }
-.dsa-list { display: flex; flex-direction: column; gap: 2px }
+.dsa-list {
+  display: flex; flex-direction: column; gap: 2px;
+  max-height: min(52vh, 420px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--dsw-alias-border-l2) transparent;
+}
+.dsa-list:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 2px }
+.dsa-list::-webkit-scrollbar { width: 8px; height: 8px }
+.dsa-list::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--dsw-alias-label-secondary) 28%, transparent);
+  border: 2px solid transparent; border-radius: 999px; background-clip: padding-box;
+}
+.dsa-list::-webkit-scrollbar-track { background: transparent }
+.dsa-list-head {
+  position: sticky; top: 0; z-index: 2;
+  background: var(--dsw-alias-bg-layer-1);
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
+  border-radius: 8px 8px 0 0;
+}
+.dsa-list-head:hover { background: var(--dsw-alias-bg-layer-1) }
 .dsa-group-label { font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-secondary); padding: 10px 8px 4px }
 .dsa-item-row {
   display: flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 8px;
@@ -2438,8 +2458,14 @@ window.__ModuleLoader__.load({
       ),
       visible.list.length === 0
         ? h('div', { key: 'empty', className: 'dsa-empty' }, rows.length === 0 ? t('manage.empty') : t('manage.emptyFilter'))
-        : h('div', { key: 'list', className: 'dsa-list' },
-          h('div', { key: 'head', className: 'dsa-item-row', style: { minHeight: '28px' } },
+        : h('div', {
+          key: 'list',
+          className: 'dsa-list',
+          tabIndex: 0,
+          role: 'region',
+          'aria-label': t('manage.title'),
+        },
+          h('div', { key: 'head', className: 'dsa-item-row dsa-list-head', style: { minHeight: '28px' } },
             h('input', {
               type: 'checkbox',
               className: 'dsa-check',

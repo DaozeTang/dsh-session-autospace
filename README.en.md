@@ -263,7 +263,7 @@ The third card joins the client session list with the Host folder inventory by s
 | Clean orphan folders | Directories named `session-<uuid>` that no conversation claims |
 | Rebuild missing folders | Recreate a folder whose conversation still exists |
 
-Search covers title, session id, and path. Filters: All / Active / New / Archived / Folder missing. Sort: recently updated, title, size. Destructive actions ask first and say that the archive is restorable and the folder goes to the Trash.
+Search covers title, session id, and path. Filters: All / Active / New / Archived / Folder missing. Sort: recently updated, title, size. The list grows with the number of conversations up to about ten rows (`min(52vh, 420px)`), then scrolls inside the card with the column header pinned, so the maintenance and status sections stay within reach. Destructive actions ask first and say that the archive is restorable and the folder goes to the Trash.
 
 ## Data and privacy
 
