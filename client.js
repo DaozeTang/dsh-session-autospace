@@ -1,13 +1,11 @@
 /**
  * Session autospace — browser half.
  *
- * Three registrations:
+ * Two registrations:
  * - `conversation.hero.workspace` (single): the workspace menu shown by the
  *   blank-session hero. It lists the real Workspaces, keeps the shipped
  *   "Add workspace…" action, and adds "No workspace", which asks the Host for a
  *   scratch session and opens it.
- * - `sidebar.session.row.trailing` (list): a folder mark on rows whose cwd is a
- *   scratch folder, so a settled conversation still says where it lives.
  * - `plugins.bundle.config` (keyed by the package name): the settings page —
  *   working path, feature switches, and the scratch-conversation manager.
  *
@@ -65,8 +63,6 @@ window.__ModuleLoader__.load({
       'toggle.pickerEntry.desc': 'Adds "No workspace" to the workspace menu. Turned off, the DSH menu comes back unchanged.',
       'toggle.rememberPick': 'Remember the last choice',
       'toggle.rememberPick.desc': 'After you pick "No workspace", New Session keeps opening scratch conversations until you pick a real workspace. A conversation that already belongs to a real workspace still keeps New Session there.',
-      'toggle.rowBadge': 'Folder mark on conversation rows',
-      'toggle.rowBadge.desc': 'Shows a folder icon after the time on conversations whose working folder is a scratch folder.',
       'toggle.management': 'Conversation manager',
       'toggle.management.desc': 'Shows the scratch-conversation manager on this page.',
       'toggle.trashOnDelete': 'Move folders to the Trash',
@@ -217,8 +213,6 @@ window.__ModuleLoader__.load({
       'toggle.pickerEntry.desc': '在工作区菜单里加入「不指定工作区」。关闭后 DSH 原菜单原样回来。',
       'toggle.rememberPick': '记住上次选择',
       'toggle.rememberPick.desc': '选过「不指定工作区」后，点「新建会话」会继续开一个临时会话，直到你重新选择普通工作区；当前对话本身属于某个工作区时，新建仍留在该工作区。',
-      'toggle.rowBadge': '会话行文件夹标记',
-      'toggle.rowBadge.desc': '在临时空间会话的行尾时间后显示一个文件夹图标。',
       'toggle.management': '会话管理区',
       'toggle.management.desc': '在本页显示临时会话管理区。',
       'toggle.trashOnDelete': '删除时回收文件夹',
@@ -1638,30 +1632,6 @@ window.__ModuleLoader__.load({
       }
     }
 
-    // ------------------------------------------------------------ row badge ---
-
-    /**
-     * Folder mark after the row's time for conversations living in a scratch
-     * folder. The slot hides trailing icons on hover, so this stays non-interactive.
-     * @param props - `sessionId` plus the standard sessions hook.
-     * @returns the mark, or null.
-     */
-    function RowBadge(props) {
-      const { sessionId } = props
-      const cwd = props.useSessions(state => state.byId[sessionId]?.cwd)
-      const status = useStore().status
-      if (!isScratchCwd(cwd)) return null
-      return h('span', {
-        title: cwd,
-        'aria-hidden': 'true',
-        style: {
-          display: 'inline-flex',
-          alignItems: 'center',
-          color: 'var(--dsw-alias-label-secondary)',
-        },
-      }, h(IconFolder, { size: 14 }))
-    }
-
     // ------------------------------------------------------------ page atoms ---
 
     /**
@@ -2325,14 +2295,6 @@ window.__ModuleLoader__.load({
         })
         : null,
       h(FeatureRow, {
-        key: 'rowBadge',
-        title: t('toggle.rowBadge'),
-        description: t('toggle.rowBadge.desc'),
-        checked: config?.rowBadge !== false,
-        disabled: busyAction || state.saving || status.caps?.configEditor === false,
-        onChange: (next) => { void toggleFeature('rowBadge', next) },
-      }),
-      h(FeatureRow, {
         key: 'management',
         title: t('toggle.management'),
         description: t('toggle.management.desc'),
@@ -2766,7 +2728,7 @@ window.__ModuleLoader__.load({
         // tables above keep rendering the same text.
       }
 
-      const handles = { picker: null, badge: null, page: null }
+      const handles = { picker: null, page: null }
       const watched = new Map()
 
       /**
@@ -2775,7 +2737,6 @@ window.__ModuleLoader__.load({
       function syncSlots() {
         const config = store.get().status?.config
         const wantPicker = config === undefined || config.pickerEntry !== false
-        const wantBadge = config === undefined || config.rowBadge !== false
 
         if (wantPicker && handles.picker === null) {
           handles.picker = ctx.slots.inject('conversation.hero.workspace', () => ctx.slots.register({
@@ -2785,17 +2746,6 @@ window.__ModuleLoader__.load({
         } else if (!wantPicker && handles.picker !== null) {
           handles.picker()
           handles.picker = null
-        }
-
-        if (wantBadge && handles.badge === null) {
-          handles.badge = ctx.slots.inject('sidebar.session.row.trailing', () => ctx.slots.register({
-            name: 'sidebar.session.row.trailing',
-            id: 'session-autospace',
-            order: 0,
-          }, RowBadge))
-        } else if (!wantBadge && handles.badge !== null) {
-          handles.badge()
-          handles.badge = null
         }
       }
 

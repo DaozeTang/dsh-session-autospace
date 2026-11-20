@@ -1,6 +1,6 @@
 {
   "name": "dsh-session-autospace",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Start a conversation without picking a workspace: every new conversation gets its own folder under a configurable root, used as its cwd and sandbox boundary. The last choice is remembered.",
   "type": "module",
   "license": "MIT",

@@ -68,7 +68,6 @@
   <rect x="918" y="572" width="4" height="58" rx="2" fill="#4D6BFE"/>
   <g color="#4D6BFE"><use href="#i-spark" x="940" y="588" width="26" height="26"/></g>
   <text x="980" y="607" fill="#1E2637" font-size="22" font-weight="600">How the sandbox works</text>
-  <g color="#6C7484"><use href="#i-folder" x="1420" y="589" width="24" height="24"/></g>
   <text x="1302" y="607" fill="#4D6BFE" font-size="17" text-anchor="end" font-weight="600">settled</text>
 
   <text x="980" y="662" fill="#596172" font-size="21">Regex notes</text>

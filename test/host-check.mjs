@@ -217,6 +217,7 @@ assert.ok(configuredRoot(normalizeConfig({})).endsWith('/DSH'), 'default root is
 assert.equal(normalizeConfig({ autoReclaimHours: 999 }).autoReclaimHours, 999)
 assert.equal(normalizeConfig({ autoReclaimHours: -5 }).autoReclaimHours, 0)
 assert.equal(normalizeConfig({ pickerEntry: 'yes' }).pickerEntry, true, 'non-boolean falls back to the default')
+assert.equal('rowBadge' in normalizeConfig({ rowBadge: false }), false, 'a legacy rowBadge patch is ignored, not resurrected')
 step('config normalization', 'defaults, clamping, type fallback')
 
 apply(stubCtx, currentConfig)
@@ -401,10 +402,10 @@ assert.equal(revealedOutside.payload.code, 'OUT_OF_ROOT')
 step('reveal', 'root and folder revealed, outside path refused')
 
 // config write goes through the config editor
-const written = await ok('/config', { patch: { rowBadge: false, autoReclaimHours: 6 } })
-assert.equal(written.config.rowBadge, false)
+const written = await ok('/config', { patch: { pickerEntry: false, autoReclaimHours: 6 } })
+assert.equal(written.config.pickerEntry, false)
 assert.equal(configEditorCalls.length, 1)
-assert.equal(configEditorCalls[0].rowBadge, false)
+assert.equal(configEditorCalls[0].pickerEntry, false)
 const badPatch = await call('/config', { patch: { nonsense: 1 } })
 assert.equal(badPatch.payload.ok, false)
 assert.equal(badPatch.payload.code, 'CONFIG_INVALID')

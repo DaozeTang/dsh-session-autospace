@@ -20,7 +20,7 @@ const INJECT_MARKER = '    return {\n      inject: [\'slots\', \'locale\', \'ses
 if (!source.includes(INJECT_MARKER)) throw new Error('injection marker not found')
 const instrumented = source.replace(
   INJECT_MARKER,
-  `    globalThis.__DSA__ = { WorkspaceMenu, SettingsPage, ConfigEntry, RowBadge, RowMenu, Dialog, store, RUNTIME }\n${INJECT_MARKER}`,
+  `    globalThis.__DSA__ = { WorkspaceMenu, SettingsPage, ConfigEntry, RowMenu, Dialog, store, RUNTIME }\n${INJECT_MARKER}`,
 )
 
 // --------------------------------------------------------------- React stub ---
@@ -266,7 +266,6 @@ const statusFixture = {
     rememberPick: true,
     management: true,
     trashOnDelete: true,
-    rowBadge: true,
     reuseBlank: true,
     abandonOnSwitch: true,
     autoReclaimHours: 24,
@@ -397,8 +396,11 @@ globalThis.fetch = realFetch
 results.push(['New Session default', 'scratch remembered, explicit pick clears it, switch restores DSH'])
 
 const slotsByName = new Map(registered.map(entry => [entry.key, entry]))
-for (const name of ['conversation.hero.workspace', 'sidebar.session.row.trailing', 'plugins.bundle.config']) {
+for (const name of ['conversation.hero.workspace', 'plugins.bundle.config']) {
   if (!slotsByName.has(name)) throw new Error(`missing slot registration: ${name}`)
+}
+if (registered.some(entry => entry.key === 'sidebar.session.row.trailing')) {
+  throw new Error('the plugin must not register the row-trailing seat')
 }
 
 /**
@@ -461,9 +463,6 @@ const workspaceRows = collectText(menuOpen).filter(text => text === 'demo').leng
 if (workspaceRows !== 2) throw new Error(`expected two workspace rows, saw ${workspaceRows}`)
 results.push(['menu (open)', '2 workspaces + add + scratch'])
 
-const badge = renderSlotEntry('sidebar.session.row.trailing', { sessionId: SESSION_A })
-results.push(['row badge', badge === null ? 'nothing rendered' : 'folder mark'])
-
 const summary = renderSlotEntry('plugins.bundle.config', { view: 'summary' })
 const summaryText = collectText(summary).join('')
 if (!summaryText.includes(ROOT)) throw new Error(`summary is missing the path: ${summaryText}`)
@@ -474,7 +473,8 @@ const pageText = collectText(page).join(' | ')
 for (const expected of ['Working path', 'Features', 'Remember the last choice', 'Scratch conversations', 'How the sandbox boundary works', 'Recently updated']) {
   if (!pageText.includes(expected)) throw new Error(`settings page is missing "${expected}": ${pageText.slice(0, 600)}`)
 }
-results.push(['config page', 'path + features (7 switches) + manager rows'])
+if (pageText.includes('Folder mark on conversation rows')) throw new Error('the removed row badge switch still renders')
+results.push(['config page', 'path + features (6 switches) + manager rows'])
 
 internal.store.set({
   status: { ...statusFixture, config: { ...statusFixture.config, management: false } },
@@ -574,9 +574,9 @@ const walk = (node) => {
   children.forEach(walk)
 }
 walk(pageReadOnly)
-if (switches.length !== 7) throw new Error(`expected 7 switches, saw ${switches.length}`)
+if (switches.length !== 6) throw new Error(`expected 6 switches, saw ${switches.length}`)
 if (switches.some(node => node.props.disabled !== true)) throw new Error('a switch stayed enabled on a read-only profile')
-results.push(['config page (read-only)', '7 switches disabled, write error shown'])
+results.push(['config page (read-only)', '6 switches disabled, write error shown'])
 
 // A Host that predates the field hides the row rather than offering a switch
 // whose write would be rejected.
@@ -586,7 +586,7 @@ internal.store.set({
 })
 const pageOldHost = renderSlotEntry('plugins.bundle.config', { view: 'page' })
 const oldHostSwitches = collectButtons(pageOldHost, 'switch')
-if (oldHostSwitches.length !== 6) throw new Error(`an old Host must hide the new switch, saw ${oldHostSwitches.length}`)
+if (oldHostSwitches.length !== 5) throw new Error(`an old Host must hide the new switch, saw ${oldHostSwitches.length}`)
 results.push(['config page (old Host)', 'new switch hidden, no failing write offered'])
 
 // A long session list must scroll inside the card instead of stretching it.

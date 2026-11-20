@@ -60,7 +60,7 @@ The menu is still DSH's workspace menu: existing workspaces, a separator, then *
 
 - **Pick**: create the `session-<uuid>` folder, a temporary workspace, and a blank conversation.
 - **Stage**: the input bar is live and a temporary **No workspace** group appears at the top of the sidebar. If an **Ungrouped** group already exists, both are visible.
-- **Settle**: the first message is sent; the temporary group disappears and the conversation moves into **Ungrouped** with a folder mark on its row.
+- **Settle**: the first message is sent; the temporary group disappears and the conversation moves into **Ungrouped**, exactly like any other ungrouped conversation.
 - **Abandon**: switch away before sending; the blank conversation is archived and its empty folder goes to the system Trash (unless `abandonOnSwitch` is off).
 
 ### Settings: path, switches, manager
@@ -121,7 +121,7 @@ Useful when iterating on the source; for a normal install use the GitHub command
 
 ```sh
 pnpm pack
-dsh plugin --profile <profile> add ./dsh-session-autospace-0.2.0.tgz
+dsh plugin --profile <profile> add ./dsh-session-autospace-0.3.0.tgz
 ```
 
 ### Upgrade and remove
@@ -191,7 +191,7 @@ Host cleanup retries with backoff (200 / 800 / 2000 ms, up to three attempts), t
 
 ![The browser half and the Host half talk over same-origin POST; the Host uses DSH services to touch folders, sessions, and the system Trash](docs/images/architecture.png)
 
-The browser half only renders slots: the workspace menu, the settings page, the conversation-row badge, and the `uiWorkspace.startSession` wrapper. It never touches the filesystem and makes no remote requests.
+The browser half only renders host slots (the workspace menu and the settings page) and wraps `uiWorkspace.startSession`. It never touches the filesystem and makes no remote requests.
 
 The Host half is a single-file Cordis plugin organised as `config`, `paths`, `scratch`, `settle`, `trash`, `inventory`, `routes`, `sweep`, and `log`. It has zero runtime dependencies and uses only `node:*`. Every registration is held by `ctx.effect` / `ctx.inject`; a missing service disables a capability instead of crashing.
 
@@ -218,7 +218,6 @@ Every field is on **Settings → Plugins → Session autospace**. Defaults also 
 | `rememberPick` | Remember the last choice | `true` | Off returns New Session to DSH's "current workspace, else most recent" |
 | `management` | Conversation manager | `true` | Off hides the whole manager card |
 | `trashOnDelete` | Move folders to the Trash | `true` | Off makes delete archive-only; the folder stays |
-| `rowBadge` | Folder mark on conversation rows | `true` | Off unregisters the row-trailing slot |
 | `reuseBlank` | Reuse an untouched conversation | `true` | Off creates a new folder on every click |
 | `abandonOnSwitch` | Discard on switching away | `true` | Off removes the registration only; session and folder stay |
 | `autoReclaimHours` | Reclaim untouched conversations | `24` | `0` disables auto-reclaim; range 0–8760 hours |
@@ -237,7 +236,6 @@ Default patch:
         rememberPick: true
         management: true
         trashOnDelete: true
-        rowBadge: true
         reuseBlank: true
         abandonOnSwitch: true
         autoReclaimHours: 24
@@ -347,7 +345,7 @@ There is no exact-version gate and no `@deepseek-ai/*` entry in `peerDependencie
 | System Trash unavailable | Delete is disabled; archive remains; UI points to Show in Finder |
 | `session/event` | Client blank observation and the activation sweep still settle |
 | `retainInfo` | "Discard on switching away" is off; the activation sweep handles cleanup |
-| `uiWorkspace` or a changed `startSession` shape | No wrapper is installed; New Session keeps DSH's behaviour; menu, settings, and badge still work |
+| `uiWorkspace` or a changed `startSession` shape | No wrapper is installed; New Session keeps DSH's behaviour; menu and settings still work |
 | Memory file unreadable / unwritable | Unreadable means no memory; a failed write is logged, and the choice still applies for this page |
 | Host slot contract changes | Nothing renders and one log line is written; the built-in menu is unaffected |
 
@@ -369,7 +367,7 @@ The design boundaries and trade-offs are in [docs/DESIGN.md](docs/DESIGN.md).
 ```text
 dsh-session-autospace/
 ├── index.js              # Host half: routes, staged table, sweep, Trash
-├── client.js             # Browser half: menu, settings, row badge, startSession wrapper
+├── client.js             # Browser half: menu, settings, startSession wrapper
 ├── cordis.patch.yml      # default config row
 ├── package.json          # dsh.bundle + dsh.client manifest
 ├── locale/               # bilingual plugin-page metadata
@@ -412,7 +410,7 @@ npm run test:render
 dsh plugin --profile <profile> remove dsh-session-autospace
 ```
 
-- Removing the plugin restores the menu, settings page, row badge, and New Session behaviour. Existing conversations remain normal DSH conversations, and their folders remain.
+- Removing the plugin restores the menu, settings page, and New Session behaviour. Existing conversations remain normal DSH conversations, and their folders remain.
 - For a full cleanup, archive or delete the scratch conversations you no longer need, then remove confirmed-unused directories under `<working path>/session-*`.
 - Optional memory file: `$DSH_HOME/session-autospace/last-pick-<profile>.json`.
 - Do not delete a folder that a conversation still references: the conversation shows **Folder missing**, but its messages are not lost. Rebuild the folder from the manager or keep it as history.

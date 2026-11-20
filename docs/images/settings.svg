@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1960" viewBox="0 0 1600 1960" fill="none" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1888" viewBox="0 0 1600 1888" fill="none" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="1960" gradientUnits="userSpaceOnUse">
+    <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="1888" gradientUnits="userSpaceOnUse">
       <stop stop-color="#F7F8FB"/><stop offset="1" stop-color="#EFF2F8"/>
     </linearGradient>
     <filter id="card" x="-10%" y="-10%" width="120%" height="130%">
@@ -50,7 +50,7 @@
   <g color="#4D6BFE"><use href="#i-spark" x="234" y="146" width="28" height="28"/></g>
   <text x="296" y="158" fill="#171A21" font-size="34" font-weight="700" letter-spacing="-.4">Session autospace</text>
   <rect x="624" y="134" width="64" height="28" rx="14" fill="#F1F3F9"/>
-  <text x="656" y="153" fill="#7B8291" font-size="15" text-anchor="middle" font-weight="600">0.2.0</text>
+  <text x="656" y="153" fill="#7B8291" font-size="15" text-anchor="middle" font-weight="600">0.3.0</text>
   <text x="296" y="192" fill="#6A7181" font-size="19">Give every conversation its own folder — even when you don’t pick a workspace.</text>
 
   <!-- card: working path -->
@@ -75,7 +75,7 @@
   <text x="256" y="504" fill="#9AA1B0" font-size="16">Created on first use. A project’s AGENTS.md is inherited if this path sits inside that project.</text>
 
   <!-- card: features -->
-  <rect x="220" y="538" width="1160" height="650" rx="18" fill="#FFFFFF" stroke="#E8EAF0" filter="url(#card)"/>
+  <rect x="220" y="538" width="1160" height="578" rx="18" fill="#FFFFFF" stroke="#E8EAF0" filter="url(#card)"/>
   <text x="256" y="592" fill="#171A21" font-size="28" font-weight="650">Features</text>
   <text x="1212" y="592" fill="#9AA1B0" font-size="17" text-anchor="end">Each switch takes effect immediately.</text>
 
@@ -91,146 +91,140 @@
   <circle cx="1278" cy="710" r="10" fill="#FFFFFF"/>
 
   <path d="M256 758h1088" stroke="#EEF0F4" stroke-width="1.5"/>
-  <text x="256" y="784" fill="#1E2637" font-size="21">Folder mark on conversation rows</text>
-  <text x="256" y="810" fill="#8A92A6" font-size="17">Shows a folder icon after the time on conversations whose working folder is a scratch folder.</text>
+  <text x="256" y="784" fill="#1E2637" font-size="21">Conversation manager</text>
+  <text x="256" y="810" fill="#8A92A6" font-size="17">Shows the scratch-conversation manager on this page.</text>
   <rect x="1240" y="768" width="52" height="28" rx="14" fill="#4D6BFE"/>
   <circle cx="1278" cy="782" r="10" fill="#FFFFFF"/>
 
   <path d="M256 830h1088" stroke="#EEF0F4" stroke-width="1.5"/>
-  <text x="256" y="856" fill="#1E2637" font-size="21">Conversation manager</text>
-  <text x="256" y="882" fill="#8A92A6" font-size="17">Shows the scratch-conversation manager on this page.</text>
+  <text x="256" y="856" fill="#1E2637" font-size="21">Move folders to the Trash</text>
+  <text x="256" y="882" fill="#8A92A6" font-size="17">Deleting or abandoning a conversation moves its empty folder to the system Trash.</text>
   <rect x="1240" y="840" width="52" height="28" rx="14" fill="#4D6BFE"/>
   <circle cx="1278" cy="854" r="10" fill="#FFFFFF"/>
 
   <path d="M256 902h1088" stroke="#EEF0F4" stroke-width="1.5"/>
-  <text x="256" y="928" fill="#1E2637" font-size="21">Move folders to the Trash</text>
-  <text x="256" y="954" fill="#8A92A6" font-size="17">Deleting or abandoning a conversation moves its empty folder to the system Trash.</text>
+  <text x="256" y="928" fill="#1E2637" font-size="21">Reuse an untouched conversation</text>
+  <text x="256" y="954" fill="#8A92A6" font-size="17">Picking “No workspace” again reopens the blank scratch conversation instead of creating another folder.</text>
   <rect x="1240" y="912" width="52" height="28" rx="14" fill="#4D6BFE"/>
   <circle cx="1278" cy="926" r="10" fill="#FFFFFF"/>
 
   <path d="M256 974h1088" stroke="#EEF0F4" stroke-width="1.5"/>
-  <text x="256" y="1000" fill="#1E2637" font-size="21">Reuse an untouched conversation</text>
-  <text x="256" y="1026" fill="#8A92A6" font-size="17">Picking “No workspace” again reopens the blank scratch conversation instead of creating another folder.</text>
+  <text x="256" y="1000" fill="#1E2637" font-size="21">Discard on switching away</text>
+  <text x="256" y="1026" fill="#8A92A6" font-size="17">Leaving a blank scratch conversation archives it and cleans up its folder.</text>
   <rect x="1240" y="984" width="52" height="28" rx="14" fill="#4D6BFE"/>
   <circle cx="1278" cy="998" r="10" fill="#FFFFFF"/>
 
   <path d="M256 1046h1088" stroke="#EEF0F4" stroke-width="1.5"/>
-  <text x="256" y="1072" fill="#1E2637" font-size="21">Discard on switching away</text>
-  <text x="256" y="1098" fill="#8A92A6" font-size="17">Leaving a blank scratch conversation archives it and cleans up its folder.</text>
-  <rect x="1240" y="1056" width="52" height="28" rx="14" fill="#4D6BFE"/>
-  <circle cx="1278" cy="1070" r="10" fill="#FFFFFF"/>
-
-  <path d="M256 1118h1088" stroke="#EEF0F4" stroke-width="1.5"/>
-  <text x="256" y="1144" fill="#1E2637" font-size="21">Reclaim untouched conversations</text>
-  <text x="256" y="1170" fill="#8A92A6" font-size="17">Blank conversations older than this are archived and cleaned up when the plugin starts. 0 keeps them.</text>
-  <rect x="1170" y="1128" width="76" height="38" rx="8" fill="#FBFCFE" stroke="#DDE1EA"/>
-  <text x="1208" y="1154" fill="#1E2637" font-size="18" text-anchor="middle">24</text>
-  <text x="1300" y="1154" fill="#7B8291" font-size="17">hours</text>
+  <text x="256" y="1072" fill="#1E2637" font-size="21">Reclaim untouched conversations</text>
+  <text x="256" y="1098" fill="#8A92A6" font-size="17">Blank conversations older than this are archived and cleaned up when the plugin starts. 0 keeps them.</text>
+  <rect x="1170" y="1056" width="76" height="38" rx="8" fill="#FBFCFE" stroke="#DDE1EA"/>
+  <text x="1208" y="1082" fill="#1E2637" font-size="18" text-anchor="middle">24</text>
+  <text x="1300" y="1082" fill="#7B8291" font-size="17">hours</text>
 
   <!-- card: manager -->
-  <rect x="220" y="1212" width="1160" height="650" rx="18" fill="#FFFFFF" stroke="#E8EAF0" filter="url(#card)"/>
-  <text x="256" y="1266" fill="#171A21" font-size="28" font-weight="650">Scratch conversations</text>
-  <text x="256" y="1296" fill="#8A92A6" font-size="17">6 total · ≈ 184 MB · 1 new · 1 missing folder</text>
-  <rect x="1260" y="1242" width="128" height="38" rx="8" fill="#FFFFFF" stroke="#DDE1EA"/>
-  <g color="#6A7181"><use href="#i-refresh" x="1276" y="1252" width="20" height="20"/></g>
-  <text x="1304" y="1268" fill="#2A3040" font-size="17">Refresh</text>
+  <rect x="220" y="1140" width="1160" height="650" rx="18" fill="#FFFFFF" stroke="#E8EAF0" filter="url(#card)"/>
+  <text x="256" y="1194" fill="#171A21" font-size="28" font-weight="650">Scratch conversations</text>
+  <text x="256" y="1224" fill="#8A92A6" font-size="17">6 total · ≈ 184 MB · 1 new · 1 missing folder</text>
+  <rect x="1260" y="1170" width="128" height="38" rx="8" fill="#FFFFFF" stroke="#DDE1EA"/>
+  <g color="#6A7181"><use href="#i-refresh" x="1276" y="1180" width="20" height="20"/></g>
+  <text x="1304" y="1196" fill="#2A3040" font-size="17">Refresh</text>
 
-  <rect x="256" y="1314" width="392" height="44" rx="9" fill="#FBFCFE" stroke="#DDE1EA"/>
-  <g color="#8A92A6"><use href="#i-search" x="274" y="1326" width="20" height="20"/></g>
-  <text x="304" y="1342" fill="#A0A7B5" font-size="17">Search title, session ID, or path</text>
-  <rect x="664" y="1314" width="472" height="44" rx="10" fill="#F1F3F9" stroke="#E3E6EE"/>
-  <rect x="668" y="1318" width="76" height="36" rx="8" fill="#FFFFFF"/>
-  <text x="706" y="1342" fill="#1E2637" font-size="16" text-anchor="middle" font-weight="600">All</text>
-  <text x="802" y="1342" fill="#7B8291" font-size="16" text-anchor="middle">Active</text>
-  <text x="884" y="1342" fill="#7B8291" font-size="16" text-anchor="middle">New</text>
-  <text x="972" y="1342" fill="#7B8291" font-size="16" text-anchor="middle">Archived</text>
-  <text x="1084" y="1342" fill="#7B8291" font-size="16" text-anchor="middle">Folder missing</text>
-  <rect x="1152" y="1314" width="192" height="44" rx="9" fill="#FBFCFE" stroke="#DDE1EA"/>
-  <text x="1172" y="1342" fill="#2A3040" font-size="17">Recently updated</text>
-  <path d="m1318 1328 6 6 6-6" stroke="#7B8291" stroke-width="1.8" stroke-linecap="round"/>
+  <rect x="256" y="1242" width="392" height="44" rx="9" fill="#FBFCFE" stroke="#DDE1EA"/>
+  <g color="#8A92A6"><use href="#i-search" x="274" y="1254" width="20" height="20"/></g>
+  <text x="304" y="1270" fill="#A0A7B5" font-size="17">Search title, session ID, or path</text>
+  <rect x="664" y="1242" width="472" height="44" rx="10" fill="#F1F3F9" stroke="#E3E6EE"/>
+  <rect x="668" y="1246" width="76" height="36" rx="8" fill="#FFFFFF"/>
+  <text x="706" y="1270" fill="#1E2637" font-size="16" text-anchor="middle" font-weight="600">All</text>
+  <text x="802" y="1270" fill="#7B8291" font-size="16" text-anchor="middle">Active</text>
+  <text x="884" y="1270" fill="#7B8291" font-size="16" text-anchor="middle">New</text>
+  <text x="972" y="1270" fill="#7B8291" font-size="16" text-anchor="middle">Archived</text>
+  <text x="1084" y="1270" fill="#7B8291" font-size="16" text-anchor="middle">Folder missing</text>
+  <rect x="1152" y="1242" width="192" height="44" rx="9" fill="#FBFCFE" stroke="#DDE1EA"/>
+  <text x="1172" y="1270" fill="#2A3040" font-size="17">Recently updated</text>
+  <path d="m1318 1256 6 6 6-6" stroke="#7B8291" stroke-width="1.8" stroke-linecap="round"/>
 
   <!-- list header -->
-  <rect x="256" y="1374" width="1088" height="30" rx="6" fill="#F8F9FC"/>
-  <rect x="268" y="1383" width="14" height="14" rx="3" fill="#FFFFFF" stroke="#C8CDD8"/>
-  <text x="296" y="1395" fill="#8A92A6" font-size="15">Scratch conversations</text>
-  <text x="902" y="1395" fill="#8A92A6" font-size="15" text-anchor="end">Size</text>
-  <text x="1030" y="1395" fill="#8A92A6" font-size="15" text-anchor="end">Updated</text>
+  <rect x="256" y="1302" width="1088" height="30" rx="6" fill="#F8F9FC"/>
+  <rect x="268" y="1311" width="14" height="14" rx="3" fill="#FFFFFF" stroke="#C8CDD8"/>
+  <text x="296" y="1323" fill="#8A92A6" font-size="15">Scratch conversations</text>
+  <text x="902" y="1323" fill="#8A92A6" font-size="15" text-anchor="end">Size</text>
+  <text x="1030" y="1323" fill="#8A92A6" font-size="15" text-anchor="end">Updated</text>
 
-  <text x="256" y="1432" fill="#8A92A6" font-size="15" font-weight="600">Today</text>
+  <text x="256" y="1360" fill="#8A92A6" font-size="15" font-weight="600">Today</text>
 
   <!-- row 1 -->
-  <rect x="256" y="1444" width="1088" height="52" rx="8" fill="#F7F8FC"/>
-  <rect x="268" y="1463" width="14" height="14" rx="3" fill="#4D6BFE"/>
-  <path d="m271 1470 3 3 5-6" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-  <g color="#6A7181"><use href="#i-folder" x="292" y="1456" width="22" height="22"/></g>
-  <text x="324" y="1477" fill="#1E2637" font-size="19" font-weight="600">How the sandbox works</text>
-  <text x="704" y="1477" fill="#9AA1B0" font-size="15" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">…8f6c2a1d</text>
-  <text x="902" y="1477" fill="#7B8291" font-size="16" text-anchor="end">42.8 MB</text>
-  <text x="1030" y="1477" fill="#7B8291" font-size="16" text-anchor="end">just now</text>
-  <rect x="1052" y="1457" width="68" height="26" rx="13" fill="#E8F7F0"/>
-  <text x="1086" y="1475" fill="#1F9D6B" font-size="13" text-anchor="middle" font-weight="600">Active</text>
-  <g color="#8A92A6"><use href="#i-more" x="1308" y="1462" width="20" height="20"/></g>
+  <rect x="256" y="1372" width="1088" height="52" rx="8" fill="#F7F8FC"/>
+  <rect x="268" y="1391" width="14" height="14" rx="3" fill="#4D6BFE"/>
+  <path d="m271 1398 3 3 5-6" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <g color="#6A7181"><use href="#i-folder" x="292" y="1384" width="22" height="22"/></g>
+  <text x="324" y="1405" fill="#1E2637" font-size="19" font-weight="600">How the sandbox works</text>
+  <text x="704" y="1405" fill="#9AA1B0" font-size="15" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">…8f6c2a1d</text>
+  <text x="902" y="1405" fill="#7B8291" font-size="16" text-anchor="end">42.8 MB</text>
+  <text x="1030" y="1405" fill="#7B8291" font-size="16" text-anchor="end">just now</text>
+  <rect x="1052" y="1385" width="68" height="26" rx="13" fill="#E8F7F0"/>
+  <text x="1086" y="1403" fill="#1F9D6B" font-size="13" text-anchor="middle" font-weight="600">Active</text>
+  <g color="#8A92A6"><use href="#i-more" x="1308" y="1390" width="20" height="20"/></g>
 
   <!-- row 2 -->
-  <rect x="268" y="1515" width="14" height="14" rx="3" fill="#FFFFFF" stroke="#C8CDD8"/>
-  <g color="#6A7181"><use href="#i-folder" x="292" y="1508" width="22" height="22"/></g>
-  <text x="324" y="1529" fill="#1E2637" font-size="19">Untitled</text>
-  <text x="704" y="1529" fill="#9AA1B0" font-size="15" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">…2a91f0b3</text>
-  <text x="902" y="1529" fill="#7B8291" font-size="16" text-anchor="end">0 B</text>
-  <text x="1030" y="1529" fill="#7B8291" font-size="16" text-anchor="end">3 h ago</text>
-  <rect x="1060" y="1509" width="52" height="26" rx="13" fill="#F1F3F9"/>
-  <text x="1086" y="1527" fill="#6A7181" font-size="13" text-anchor="middle" font-weight="600">New</text>
-  <g color="#8A92A6"><use href="#i-more" x="1308" y="1514" width="20" height="20"/></g>
+  <rect x="268" y="1443" width="14" height="14" rx="3" fill="#FFFFFF" stroke="#C8CDD8"/>
+  <g color="#6A7181"><use href="#i-folder" x="292" y="1436" width="22" height="22"/></g>
+  <text x="324" y="1457" fill="#1E2637" font-size="19">Untitled</text>
+  <text x="704" y="1457" fill="#9AA1B0" font-size="15" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">…2a91f0b3</text>
+  <text x="902" y="1457" fill="#7B8291" font-size="16" text-anchor="end">0 B</text>
+  <text x="1030" y="1457" fill="#7B8291" font-size="16" text-anchor="end">3 h ago</text>
+  <rect x="1060" y="1437" width="52" height="26" rx="13" fill="#F1F3F9"/>
+  <text x="1086" y="1455" fill="#6A7181" font-size="13" text-anchor="middle" font-weight="600">New</text>
+  <g color="#8A92A6"><use href="#i-more" x="1308" y="1442" width="20" height="20"/></g>
 
-  <text x="256" y="1584" fill="#8A92A6" font-size="15" font-weight="600">Yesterday</text>
+  <text x="256" y="1512" fill="#8A92A6" font-size="15" font-weight="600">Yesterday</text>
 
   <!-- row 3 -->
-  <rect x="268" y="1597" width="14" height="14" rx="3" fill="#FFFFFF" stroke="#C8CDD8"/>
-  <g color="#6A7181"><use href="#i-folder" x="292" y="1590" width="22" height="22"/></g>
-  <text x="324" y="1611" fill="#1E2637" font-size="19">Release notes draft</text>
-  <text x="704" y="1611" fill="#9AA1B0" font-size="15" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">…77bde41c</text>
-  <text x="902" y="1611" fill="#7B8291" font-size="16" text-anchor="end">12.4 MB</text>
-  <text x="1030" y="1611" fill="#7B8291" font-size="16" text-anchor="end">1 d ago</text>
-  <rect x="1044" y="1591" width="76" height="26" rx="13" fill="#F1F3F9"/>
-  <text x="1082" y="1609" fill="#6A7181" font-size="13" text-anchor="middle" font-weight="600">Archived</text>
-  <g color="#8A92A6"><use href="#i-more" x="1308" y="1596" width="20" height="20"/></g>
+  <rect x="268" y="1525" width="14" height="14" rx="3" fill="#FFFFFF" stroke="#C8CDD8"/>
+  <g color="#6A7181"><use href="#i-folder" x="292" y="1518" width="22" height="22"/></g>
+  <text x="324" y="1539" fill="#1E2637" font-size="19">Release notes draft</text>
+  <text x="704" y="1539" fill="#9AA1B0" font-size="15" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">…77bde41c</text>
+  <text x="902" y="1539" fill="#7B8291" font-size="16" text-anchor="end">12.4 MB</text>
+  <text x="1030" y="1539" fill="#7B8291" font-size="16" text-anchor="end">1 d ago</text>
+  <rect x="1044" y="1519" width="76" height="26" rx="13" fill="#F1F3F9"/>
+  <text x="1082" y="1537" fill="#6A7181" font-size="13" text-anchor="middle" font-weight="600">Archived</text>
+  <g color="#8A92A6"><use href="#i-more" x="1308" y="1524" width="20" height="20"/></g>
 
   <!-- row 4 -->
-  <rect x="268" y="1649" width="14" height="14" rx="3" fill="#FFFFFF" stroke="#C8CDD8"/>
-  <g color="#C58A2A"><use href="#i-folder" x="292" y="1642" width="22" height="22"/></g>
-  <text x="324" y="1663" fill="#1E2637" font-size="19">Kernel notes</text>
-  <text x="704" y="1663" fill="#9AA1B0" font-size="15" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">…c04e19aa</text>
-  <text x="902" y="1663" fill="#7B8291" font-size="16" text-anchor="end">—</text>
-  <text x="1030" y="1663" fill="#7B8291" font-size="16" text-anchor="end">2 d ago</text>
-  <rect x="1048" y="1643" width="100" height="26" rx="13" fill="#FDF3E2"/>
-  <text x="1098" y="1661" fill="#B7791F" font-size="13" text-anchor="middle" font-weight="600">Folder missing</text>
-  <g color="#8A92A6"><use href="#i-more" x="1308" y="1648" width="20" height="20"/></g>
+  <rect x="268" y="1577" width="14" height="14" rx="3" fill="#FFFFFF" stroke="#C8CDD8"/>
+  <g color="#C58A2A"><use href="#i-folder" x="292" y="1570" width="22" height="22"/></g>
+  <text x="324" y="1591" fill="#1E2637" font-size="19">Kernel notes</text>
+  <text x="704" y="1591" fill="#9AA1B0" font-size="15" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">…c04e19aa</text>
+  <text x="902" y="1591" fill="#7B8291" font-size="16" text-anchor="end">—</text>
+  <text x="1030" y="1591" fill="#7B8291" font-size="16" text-anchor="end">2 d ago</text>
+  <rect x="1048" y="1571" width="100" height="26" rx="13" fill="#FDF3E2"/>
+  <text x="1098" y="1589" fill="#B7791F" font-size="13" text-anchor="middle" font-weight="600">Folder missing</text>
+  <g color="#8A92A6"><use href="#i-more" x="1308" y="1576" width="20" height="20"/></g>
 
   <!-- bulk bar -->
-  <rect x="256" y="1696" width="1088" height="50" rx="9" fill="#F5F7FF" stroke="#D9E0FF"/>
-  <text x="276" y="1727" fill="#1E2637" font-size="16">2 selected</text>
-  <rect x="820" y="1706" width="92" height="30" rx="7" fill="#FFFFFF" stroke="#DDE1EA"/>
-  <text x="866" y="1726" fill="#2A3040" font-size="14" text-anchor="middle">Archive</text>
-  <rect x="920" y="1706" width="106" height="30" rx="7" fill="#FFFFFF" stroke="#DDE1EA"/>
-  <text x="973" y="1726" fill="#2A3040" font-size="14" text-anchor="middle">Unarchive</text>
-  <rect x="1034" y="1706" width="132" height="30" rx="7" fill="#FDECEC" stroke="#F3C9C9"/>
-  <text x="1100" y="1726" fill="#C2463D" font-size="14" text-anchor="middle">Move to Trash</text>
-  <rect x="1174" y="1706" width="150" height="30" rx="7" fill="#FFFFFF" stroke="#DDE1EA"/>
-  <text x="1249" y="1726" fill="#2A3040" font-size="14" text-anchor="middle">Clear selection</text>
+  <rect x="256" y="1624" width="1088" height="50" rx="9" fill="#F5F7FF" stroke="#D9E0FF"/>
+  <text x="276" y="1655" fill="#1E2637" font-size="16">2 selected</text>
+  <rect x="820" y="1634" width="92" height="30" rx="7" fill="#FFFFFF" stroke="#DDE1EA"/>
+  <text x="866" y="1654" fill="#2A3040" font-size="14" text-anchor="middle">Archive</text>
+  <rect x="920" y="1634" width="106" height="30" rx="7" fill="#FFFFFF" stroke="#DDE1EA"/>
+  <text x="973" y="1654" fill="#2A3040" font-size="14" text-anchor="middle">Unarchive</text>
+  <rect x="1034" y="1634" width="132" height="30" rx="7" fill="#FDECEC" stroke="#F3C9C9"/>
+  <text x="1100" y="1654" fill="#C2463D" font-size="14" text-anchor="middle">Move to Trash</text>
+  <rect x="1174" y="1634" width="150" height="30" rx="7" fill="#FFFFFF" stroke="#DDE1EA"/>
+  <text x="1249" y="1654" fill="#2A3040" font-size="14" text-anchor="middle">Clear selection</text>
 
   <!-- maintenance -->
-  <text x="256" y="1782" fill="#171A21" font-size="20" font-weight="650">Maintenance</text>
-  <rect x="256" y="1798" width="226" height="36" rx="8" fill="#FFFFFF" stroke="#DDE1EA"/>
-  <text x="274" y="1822" fill="#2A3040" font-size="16">Reclaim new conversations</text>
-  <text x="452" y="1822" fill="#9AA1B0" font-size="15">(1)</text>
-  <rect x="494" y="1798" width="196" height="36" rx="8" fill="#FFFFFF" stroke="#DDE1EA"/>
-  <text x="512" y="1822" fill="#2A3040" font-size="16">Clean orphan folders</text>
-  <text x="670" y="1822" fill="#9AA1B0" font-size="15">(0)</text>
-  <rect x="702" y="1798" width="226" height="36" rx="8" fill="#FFFFFF" stroke="#DDE1EA"/>
-  <text x="720" y="1822" fill="#2A3040" font-size="16">Rebuild missing folders</text>
-  <text x="898" y="1822" fill="#9AA1B0" font-size="15">(1)</text>
+  <text x="256" y="1710" fill="#171A21" font-size="20" font-weight="650">Maintenance</text>
+  <rect x="256" y="1726" width="226" height="36" rx="8" fill="#FFFFFF" stroke="#DDE1EA"/>
+  <text x="274" y="1750" fill="#2A3040" font-size="16">Reclaim new conversations</text>
+  <text x="452" y="1750" fill="#9AA1B0" font-size="15">(1)</text>
+  <rect x="494" y="1726" width="196" height="36" rx="8" fill="#FFFFFF" stroke="#DDE1EA"/>
+  <text x="512" y="1750" fill="#2A3040" font-size="16">Clean orphan folders</text>
+  <text x="670" y="1750" fill="#9AA1B0" font-size="15">(0)</text>
+  <rect x="702" y="1726" width="226" height="36" rx="8" fill="#FFFFFF" stroke="#DDE1EA"/>
+  <text x="720" y="1750" fill="#2A3040" font-size="16">Rebuild missing folders</text>
+  <text x="898" y="1750" fill="#9AA1B0" font-size="15">(1)</text>
 
   <!-- footer -->
-  <text x="220" y="1912" fill="#9AA1B0" font-size="16">While a conversation is staged, the sidebar shows a temporary “No workspace” group beside any Ungrouped group it already has.</text>
-  <text x="220" y="1938" fill="#9AA1B0" font-size="16">Deleting means archive + move the folder to the system Trash. Disabling the plugin restores the stock DSH surfaces and keeps every conversation.</text>
+  <text x="220" y="1840" fill="#9AA1B0" font-size="16">While a conversation is staged, the sidebar shows a temporary “No workspace” group beside any Ungrouped group it already has.</text>
+  <text x="220" y="1866" fill="#9AA1B0" font-size="16">Deleting means archive + move the folder to the system Trash. Disabling the plugin restores the stock DSH surfaces and keeps every conversation.</text>
 </svg>

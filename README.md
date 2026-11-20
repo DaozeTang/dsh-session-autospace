@@ -60,7 +60,7 @@ Session Autospace 增加第三种选择：**一次对话，一个文件夹，一
 
 - **选择**：创建 `session-<uuid>` 目录、临时工作区和空白会话。
 - **暂存**：输入区可用，侧栏顶部出现临时的「不指定工作区」分组；如果原本已有「未分组」，两组并存。
-- **落定**：首条消息发出，临时分组消失，对话进入「未分组」，行尾出现文件夹标记。
+- **落定**：首条消息发出，临时分组消失，对话进入「未分组」，与普通未分组对话显示一致。
 - **放弃**：发送前切到别的会话，空白会话被归档，空文件夹进入系统废纸篓（可用 `abandonOnSwitch` 关闭）。
 
 ### 设置页：路径、开关、临时会话管理
@@ -121,7 +121,7 @@ dsh plugin --profile <profile> add ./dsh-session-autospace
 
 ```sh
 pnpm pack
-dsh plugin --profile <profile> add ./dsh-session-autospace-0.2.0.tgz
+dsh plugin --profile <profile> add ./dsh-session-autospace-0.3.0.tgz
 ```
 
 ### 升级与移除
@@ -141,7 +141,7 @@ dsh plugin --profile <profile> add github:DaozeTang/dsh-session-autospace
 1. 新建对话，打开工作区菜单。
 2. 选择「不指定工作区」。页面进入可输入状态，chip 显示「不指定工作区」。
 3. 输入并发送第一条消息。
-4. 侧栏的临时分组消失；对话出现在「未分组」，行尾出现文件夹图标。
+4. 侧栏的临时分组消失；对话出现在「未分组」，与普通对话显示一致。
 5. 再点「新建会话」：仍然进入一个新的临时会话。打开一个普通工作区对话后，新建会回到该工作区。
 
 对应的目录结构：
@@ -191,7 +191,7 @@ DSH 的可输入空白会话必须挂在真实工作区下，而工作区路径�
 
 ![浏览器半与宿主半通过同源 POST 通信，宿主通过 DSH 服务操作文件夹、会话和系统废纸篓](docs/images/architecture.png)
 
-浏览器半只渲染槽位：工作区菜单、设置页、会话行标记，以及 `uiWorkspace.startSession` 的包装。它不直接碰文件系统，也不发远程请求。
+浏览器半只渲染宿主槽位（工作区菜单和设置页），并包装 `uiWorkspace.startSession`。它不直接碰文件系统，也不发远程请求。
 
 宿主半是单文件 Cordis 插件，按 `config`、`paths`、`scratch`、`settle`、`trash`、`inventory`、`routes`、`sweep`、`log` 组织，零运行时依赖，只使用 `node:*`。所有注册都由 `ctx.effect` / `ctx.inject` 持有；缺服务时关闭对应能力，而不是崩溃。
 
@@ -218,7 +218,6 @@ DSH 没有为新会话入口提供插槽，侧栏按钮、标题栏按钮和 `se
 | `rememberPick` | 记住上次选择 | `true` | 关闭后「新建会话」回到 DSH 的「当前工作区，否则最近工作区」 |
 | `management` | 会话管理区 | `true` | 关闭后整张管理卡不渲染 |
 | `trashOnDelete` | 删除时回收文件夹 | `true` | 关闭后删除只归档，文件夹保留 |
-| `rowBadge` | 会话行文件夹标记 | `true` | 关闭即注销行尾槽位 |
 | `reuseBlank` | 复用未开始的会话 | `true` | 关闭后每次点击都新建文件夹 |
 | `abandonOnSwitch` | 切换走时自动消失 | `true` | 关闭后只撤登记，保留会话和目录 |
 | `autoReclaimHours` | 自动回收未开始的会话 | `24` | `0` 表示不自动回收；范围 0–8760 小时 |
@@ -237,7 +236,6 @@ DSH 没有为新会话入口提供插槽，侧栏按钮、标题栏按钮和 `se
         rememberPick: true
         management: true
         trashOnDelete: true
-        rowBadge: true
         reuseBlank: true
         abandonOnSwitch: true
         autoReclaimHours: 24
@@ -347,7 +345,7 @@ $DSH_HOME/session-autospace/
 | 系统废纸篓不可用 | 删除动作置灰，保留归档，引导「在访达中显示」 |
 | `session/event` | 只靠客户端 blank 观测和激活清扫 |
 | `retainInfo` | 关闭「切换走自动消失」，改用激活清扫 |
-| `uiWorkspace` 或 `startSession` 形状变化 | 不安装包装，「新建会话」保持 DSH 原行为；菜单、设置页、行标记不受影响 |
+| `uiWorkspace` 或 `startSession` 形状变化 | 不安装包装，「新建会话」保持 DSH 原行为；菜单、设置页不受影响 |
 | 记忆文件不可读 / 不可写 | 读取失败视为没有记忆；写入失败只记日志，本次页面内仍按新选择生效 |
 | 宿主槽位契约变化 | 不渲染并记一次日志，内置菜单不受影响 |
 
@@ -369,7 +367,7 @@ $DSH_HOME/session-autospace/
 ```text
 dsh-session-autospace/
 ├── index.js              # 宿主半：路由、暂存表、清扫、废纸篓
-├── client.js             # 浏览器半：菜单、设置页、行标记、startSession 包装
+├── client.js             # 浏览器半：菜单、设置页、startSession 包装
 ├── cordis.patch.yml      # 默认配置行
 ├── package.json          # dsh.bundle + dsh.client 清单
 ├── locale/               # 插件详情页的中英文元数据
@@ -412,7 +410,7 @@ npm run test:render
 dsh plugin --profile <profile> remove dsh-session-autospace
 ```
 
-- 移除插件后，菜单、设置页、行标记和「新建会话」行为都会复原；已经创建的会话仍是普通 DSH 会话，文件夹也保留。
+- 移除插件后，菜单、设置页和「新建会话」行为都会复原；已经创建的会话仍是普通 DSH 会话，文件夹也保留。
 - 想彻底清理，先归档或删除不再需要的临时会话，再删除 `<工作路径>/session-*` 中确认无用的目录。
 - 可选的记忆文件：`$DSH_HOME/session-autospace/last-pick-<profile>.json`。
 - 不要直接删除仍有会话引用的目录：会话会显示为「文件夹缺失」，但不会丢消息；可以在管理区重建目录，或保留作历史记录。
