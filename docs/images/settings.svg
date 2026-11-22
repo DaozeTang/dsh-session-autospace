@@ -12,6 +12,13 @@
     <symbol id="i-folder" viewBox="0 0 24 24">
       <path d="M3.5 7.2c0-.9.7-1.6 1.6-1.6h3.6c.4 0 .8.2 1.1.5l1.3 1.3h7.9c.9 0 1.6.7 1.6 1.6v8.4c0 .9-.7 1.6-1.6 1.6H5.1c-.9 0-1.6-.7-1.6-1.6V7.2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
     </symbol>
+    <symbol id="i-autospace" viewBox="0 0 36 36">
+      <path d="M5.5 9.4c0-1.15.93-2.08 2.08-2.08h5.2c.62 0 1.21.27 1.61.75l1.42 1.7c.27.32.67.5 1.09.5h11.52c1.15 0 2.08.93 2.08 2.08v9.9c0 1.15-.93 2.08-2.08 2.08H7.58c-1.15 0-2.08-.93-2.08-2.08V9.4Z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" fill="none"/>
+      <circle cx="14.2" cy="17.5" r="1.35" fill="currentColor"/>
+      <circle cx="18" cy="17.5" r="1.35" fill="currentColor"/>
+      <circle cx="21.8" cy="17.5" r="1.35" fill="currentColor"/>
+      <path d="M6.4 28.7h23.2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" opacity=".38"/>
+    </symbol>
     <symbol id="i-spark" viewBox="0 0 24 24">
       <path d="M4.5 12.5c0-.6.4-1 1-1h3.1l1.2-1.2c.2-.2.4-.3.7-.3h3.9c.6 0 1 .4 1 1v2.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
       <rect x="4.5" y="9.4" width="15" height="8.2" rx="2.2" stroke="currentColor" stroke-width="1.6"/>
@@ -40,17 +47,15 @@
   <path d="m48 46 8-8M48 46l8 8" stroke="#6A7181" stroke-width="2.2" stroke-linecap="round"/>
   <text x="76" y="53" fill="#6A7181" font-size="19">Settings</text>
   <text x="164" y="53" fill="#B0B6C2" font-size="19">/</text>
-  <text x="184" y="53" fill="#6A7181" font-size="19">Plugins</text>
-  <text x="258" y="53" fill="#B0B6C2" font-size="19">/</text>
-  <text x="278" y="53" fill="#1C1D21" font-size="19" font-weight="600">Session autospace</text>
+  <text x="184" y="53" fill="#1C1D21" font-size="19" font-weight="600">Session autospace</text>
   <text x="1528" y="53" fill="#8A92A6" font-size="18" text-anchor="end">DSH Desktop</text>
 
   <!-- plugin header -->
   <rect x="220" y="132" width="56" height="56" rx="14" fill="#EDF0FF"/>
-  <g color="#4D6BFE"><use href="#i-spark" x="234" y="146" width="28" height="28"/></g>
+  <g color="#4D6BFE"><use href="#i-autospace" x="234" y="146" width="28" height="28"/></g>
   <text x="296" y="158" fill="#171A21" font-size="34" font-weight="700" letter-spacing="-.4">Session autospace</text>
   <rect x="624" y="134" width="64" height="28" rx="14" fill="#F1F3F9"/>
-  <text x="656" y="153" fill="#7B8291" font-size="15" text-anchor="middle" font-weight="600">0.3.0</text>
+  <text x="656" y="153" fill="#7B8291" font-size="15" text-anchor="middle" font-weight="600">0.4.0</text>
   <text x="296" y="192" fill="#6A7181" font-size="19">Give every conversation its own folder — even when you don’t pick a workspace.</text>
 
   <!-- card: working path -->
@@ -60,7 +65,7 @@
   <text x="1291" y="278" fill="#7B8291" font-size="15" text-anchor="middle" font-weight="600">Default</text>
   <text x="256" y="316" fill="#7B8291" font-size="18">Each conversation gets a folder named after its session; that folder is its working directory and sandbox boundary.</text>
   <text x="256" y="358" fill="#8A92A6" font-size="16">In use</text>
-  <rect x="256" y="374" width="1088" height="56" rx="10" fill="#FBFCFE" stroke="#DDE1EA" stroke-width="1.5"/>
+  <rect x="256" y="374" width="972" height="56" rx="10" fill="#FBFCFE" stroke="#DDE1EA" stroke-width="1.5"/>
   <text x="278" y="409" fill="#1E2637" font-size="21" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">~/DSH</text>
   <text x="352" y="409" fill="#A0A7B5" font-size="18">(default)</text>
   <rect x="256" y="444" width="118" height="38" rx="8" fill="#FFFFFF" stroke="#DDE1EA"/>
@@ -70,8 +75,8 @@
   <text x="432" y="469" fill="#2A3040" font-size="17">Show in Finder</text>
   <rect x="590" y="444" width="168" height="38" rx="8" fill="#FFFFFF" stroke="#DDE1EA"/>
   <text x="674" y="469" fill="#2A3040" font-size="17" text-anchor="middle">Restore default</text>
-  <rect x="1232" y="444" width="112" height="38" rx="8" fill="#EDF0FF" stroke="#C9D2FF"/>
-  <text x="1288" y="469" fill="#4D6BFE" font-size="17" text-anchor="middle" font-weight="600">Save</text>
+  <rect x="1252" y="383" width="92" height="38" rx="8" fill="#EDF0FF" stroke="#C9D2FF"/>
+  <text x="1298" y="408" fill="#4D6BFE" font-size="17" text-anchor="middle" font-weight="600">Save</text>
   <text x="256" y="504" fill="#9AA1B0" font-size="16">Created on first use. A project’s AGENTS.md is inherited if this path sits inside that project.</text>
 
   <!-- card: features -->
@@ -124,7 +129,7 @@
   <!-- card: manager -->
   <rect x="220" y="1140" width="1160" height="650" rx="18" fill="#FFFFFF" stroke="#E8EAF0" filter="url(#card)"/>
   <text x="256" y="1194" fill="#171A21" font-size="28" font-weight="650">Scratch conversations</text>
-  <text x="256" y="1224" fill="#8A92A6" font-size="17">6 total · ≈ 184 MB · 1 new · 1 missing folder</text>
+  <text x="256" y="1224" fill="#8A92A6" font-size="17">6 total · ≈ 184 MB · 1 new · missing: 1</text>
   <rect x="1260" y="1170" width="128" height="38" rx="8" fill="#FFFFFF" stroke="#DDE1EA"/>
   <g color="#6A7181"><use href="#i-refresh" x="1276" y="1180" width="20" height="20"/></g>
   <text x="1304" y="1196" fill="#2A3040" font-size="17">Refresh</text>
@@ -146,9 +151,7 @@
   <!-- list header -->
   <rect x="256" y="1302" width="1088" height="30" rx="6" fill="#F8F9FC"/>
   <rect x="268" y="1311" width="14" height="14" rx="3" fill="#FFFFFF" stroke="#C8CDD8"/>
-  <text x="296" y="1323" fill="#8A92A6" font-size="15">Scratch conversations</text>
-  <text x="902" y="1323" fill="#8A92A6" font-size="15" text-anchor="end">Size</text>
-  <text x="1030" y="1323" fill="#8A92A6" font-size="15" text-anchor="end">Updated</text>
+  <text x="296" y="1323" fill="#8A92A6" font-size="15">Select all</text>
 
   <text x="256" y="1360" fill="#8A92A6" font-size="15" font-weight="600">Today</text>
 

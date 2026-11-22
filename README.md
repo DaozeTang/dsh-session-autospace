@@ -39,9 +39,10 @@ Session Autospace 增加第三种选择：**一次对话，一个文件夹，一
 - **原生输入与发送**。不替换输入区、不拦截消息、不改写会话内容。首条 `turn/start` 后，插件只做一件事：删掉临时工作区登记。
 - **落进未分组**。临时分组消失，对话成为普通会话，文件夹、`cwd`、沙盒边界都不变。
 - **记住上次选择**。选过「不指定工作区」后，侧栏、标题栏和 `⌘N` 的「新建会话」会继续开一个临时会话；选一次普通工作区就恢复。当前对话属于普通工作区时，新建仍留在该工作区。
-- **一个设置页**。工作路径、九项设置、临时会话管理区都在「设置 → 插件 → 会话自动空间」。
-- **会话管理**。搜索、筛选、排序、打开、重命名、置顶、归档、在访达中显示、复制路径、移入废纸篓，以及批量操作和维护动作。
-- **安全删除**。DSH 没有永久删除：删除的含义是「归档会话 + 把文件夹移入系统废纸篓」。运行中的会话会先被拒绝，确认后才停止并归档。
+- **设置里的一页**。工作路径、七个开关和临时会话管理区都在「设置 → 会话自动空间」；插件页只保留简介、启用开关和卸载。
+- **会话管理**。搜索、筛选、排序、打开、重命名、置顶、归档、在访达中显示、复制路径、移入废纸篓，以及批量操作和维护动作。列表按「标题 + 状态」和「session ID · 占用 · 时间」两行排布，设置面板再窄也不需要横向滚动。
+- **安全删除**。DSH 没有永久删除：删除的含义是「归档会话 + 把文件夹移入系统废纸篓」。运行中的会话会先被拒绝，确认后才停止并归档；重复删除同一会话得到同一个结果，不会报错。
+- **只管理自己的会话**。宿主在每次操作前校验「会话的 `cwd` 就是当前工作路径下的同名目录」；换过工作路径的旧会话不会显示在管理区，也不会被误判为「文件夹缺失」或误建目录。
 - **双语、键盘与可访问性**。跟随 DSH 语言（`zh` / `en`），菜单、行菜单、对话框都有键盘路径和焦点还原。
 
 ## 界面
@@ -63,13 +64,13 @@ Session Autospace 增加第三种选择：**一次对话，一个文件夹，一
 - **落定**：首条消息发出，临时分组消失，对话进入「未分组」，与普通未分组对话显示一致。
 - **放弃**：发送前切到别的会话，空白会话被归档，空文件夹进入系统废纸篓（可用 `abandonOnSwitch` 关闭）。
 
-### 设置页：路径、开关、临时会话管理
+### 设置分区：路径、开关、临时会话管理
 
-[![设置页的三个卡片：工作路径、功能开关、临时会话管理](docs/images/settings.png)](docs/images/settings.png)
+[![设置分区的三个卡片：工作路径、功能开关、临时会话管理](docs/images/settings.png)](docs/images/settings.png)
 
 <sub>点击图片查看原图。</sub>
 
-工作路径卡支持输入绝对路径、选择目录、在访达中显示、恢复默认；功能卡里每个开关即时生效；管理区把会话列表、文件夹事实和维护动作放在一页。
+设置面板的导航里新增「会话自动空间」一节。工作路径卡支持输入绝对路径、选择目录、在访达中显示、恢复默认；功能卡里每个开关即时生效；管理区把会话列表、文件夹事实和维护动作放在一页。插件页本身只保留简介、启用开关和卸载。
 
 ## 安装
 
@@ -121,7 +122,7 @@ dsh plugin --profile <profile> add ./dsh-session-autospace
 
 ```sh
 pnpm pack
-dsh plugin --profile <profile> add ./dsh-session-autospace-0.3.0.tgz
+dsh plugin --profile <profile> add ./dsh-session-autospace-0.4.0.tgz
 ```
 
 ### 升级与移除
@@ -209,7 +210,7 @@ DSH 没有为新会话入口提供插槽，侧栏按钮、标题栏按钮和 `se
 
 ## 配置
 
-所有字段都在「设置 → 插件 → 会话自动空间」里；默认值也写在 `cordis.patch.yml`。
+所有字段都在「设置 → 会话自动空间」里；默认值也写在 `cordis.patch.yml`。插件页不再承载设置。
 
 | 键 | 界面 | 默认 | 说明 / 关闭后 |
 | --- | --- | --- | --- |
@@ -245,7 +246,7 @@ DSH 没有为新会话入口提供插槽，侧栏按钮、标题栏按钮和 `se
 
 ## 会话管理
 
-「设置 → 插件 → 会话自动空间」的第三张卡片把客户端会话列表和宿主文件夹清单按 session id 合并：
+「设置 → 会话自动空间」的管理卡片把客户端会话列表和宿主文件夹清单按 session id 合并，只列出当前工作路径下的会话：
 
 | 动作 | 行为 |
 | --- | --- |
@@ -255,13 +256,13 @@ DSH 没有为新会话入口提供插槽，侧栏按钮、标题栏按钮和 `se
 | 归档 / 取消归档 | 归档可恢复；运行中的会话需先确认停止 |
 | 在访达中显示 | 通过宿主的 reveal 能力打开文件夹 |
 | 复制路径 | 复制文件夹绝对路径 |
-| 移入废纸篓 | 先归档，再把文件夹移到系统废纸篓；不硬删除 |
-| 批量操作 | 归档、取消归档、移入废纸篓，单次最多 100 条 |
-| 清理未开始 | 归档超过阈值的空白会话并清理空目录 |
-| 清理孤立文件夹 | 形如 `session-<uuid>` 但没有会话认领的目录 |
-| 重建缺失文件夹 | 会话还在、目录被删时重新创建 |
+| 移入废纸篓 | 先归档，再把文件夹移到系统废纸篓；不硬删除。运行中的会话会先确认并停止当前回合；文件夹已不存在时按「已完成」处理 |
+| 批量操作 | 归档、取消归档、移入废纸篓；按钮只作用于适合该动作的选中项（例如归档跳过已归档），一次最多 100 条 |
+| 清理未开始 | 归档超过阈值的空白会话并清理空目录；非本插件的会话会被跳过 |
+| 清理孤立文件夹 | 形如 `session-<uuid>`、没有会话认领、且不是刚创建的目录；执行前重新读取会话列表 |
+| 重建缺失文件夹 | 只为 `cwd` 指向该目录、但目录被删的会话重建；不会在别处造目录 |
 
-搜索覆盖标题、session ID 和路径；筛选有全部 / 进行中 / 未开始 / 已归档 / 文件夹缺失；排序有最近更新、标题、占用空间。列表高度随会话数量自适应，最多约 10 行（`min(52vh, 420px)`）；超出后列表在卡片内滚动，列头固定在顶部，下方的维护与状态区不必再等列表走完。不可逆动作会先弹确认框，正文写明「归档可恢复，文件夹进废纸篓」。
+搜索覆盖标题、session ID 和路径（没有标题的会话也能搜到「新会话」或它的显示标题）；筛选有全部 / 进行中 / 未开始 / 已归档 / 文件夹缺失；排序有最近更新、标题、占用空间。列表最大约 `min(46vh, 380px)`，超出后在卡片内滚动，「全选」固定在顶部；全选会停在 100 条并说明原因。系统废纸篓不可用时删除按钮置灰并给出提示；不可逆动作会先弹确认框，正文写明「归档可恢复，文件夹进废纸篓」。打开会话会先关闭设置面板，再切到该对话。
 
 ## 数据与隐私
 
@@ -299,7 +300,9 @@ $DSH_HOME/session-autospace/
 
 - 工作路径：绝对路径、无 NUL、`mkdir -p` 后 `realpath` 稳定。
 - 目标目录：位于 `realpath(root)` 之下、基名等于 session id、`lstat` 为目录、拒绝符号链接。
-- 会话：必须存在，且 `header.cwd` 与目标目录的 `realpath` 一致；删除场景拒绝运行中的会话。
+- 会话：必须存在，且 `header.cwd` 恰好是 `realpath(root)/<session id>`；改名、置顶、归档、删除和维护动作都会先过这道校验，不属于当前工作路径的会话返回 `NOT_SCRATCH`。
+- 删除：运行中的会话默认返回 `SESSION_RUNNING`；界面确认后带 `stop: true` 重试，宿主先归档并停止当前回合。文件夹已经不存在的重复删除返回同样的成功结果。
+- 维护：`reclaimBlank`、`orphans`、`rebuildMissing` 在执行前重新读取会话列表并逐个校验；刚创建、可能还在等会话认领的目录会被跳过。
 - 请求：`POST` JSON，body ≤ 64 KiB，先过同源 admission fence；操作走白名单，标题 ≤ 200 字符，批量 ≤ 100 条。
 - 错误只回显相对信息，不回显其他路径。
 - 废纸篓不可用时返回明确错误，界面引导手动处理，绝不降级为硬删除。
@@ -324,13 +327,13 @@ $DSH_HOME/session-autospace/
 | `/settle` | `{sessionId}` | `{settled, noop?}` |
 | `/abandon` | `{sessionId, trash?}` | `{abandoned, trashed?, trashError?, settled?}` |
 | `/inventory` | `{fresh?}` | `{root, folders, orphans}` |
-| `/session-op` | `{sessionId, op, title?}` | `{ok}` |
+| `/session-op` | `{sessionId, op, title?, stop?}` | `{ok}` |
 | `/probe` | `{path}` | `{path, exists, writable, projectRoot}` |
-| `/trash` | `{sessionId}` | `{archived, trashed, kept?, method?, trashError?, path?}` |
+| `/trash` | `{sessionId, stop?}` | `{archived, trashed, kept?, alreadyGone?, method?, trashError?, path?}` |
 | `/reveal` | `{sessionId? 或 path?}` | `{revealed}` |
 | `/maintenance` | `{op, ids?}` | `{changed, skipped}` |
 
-常见错误码：`ROOT_INVALID`、`ROOT_UNWRITABLE`、`SESSION_CONFLICT`、`WORKSPACE_CREATE_FAILED`、`NOT_SCRATCH`、`SETTLE_FAILED`、`ARCHIVE_FAILED`、`SESSION_RUNNING`、`FOLDER_MISSING`、`OUT_OF_ROOT`、`SYMLINK_REJECTED`、`TRASH_UNAVAILABLE`、`CONFIG_INVALID`、`CONFIG_WRITE_FAILED`、`BODY_TOO_LARGE`。
+常见错误码：`ROOT_INVALID`、`ROOT_UNWRITABLE`、`SESSION_CONFLICT`、`WORKSPACE_CREATE_FAILED`、`NOT_SCRATCH`、`SESSION_MISSING`、`SESSION_ARCHIVED`、`SETTLE_FAILED`、`ARCHIVE_FAILED`、`SESSION_RUNNING`、`FOLDER_MISSING`、`OUT_OF_ROOT`、`SYMLINK_REJECTED`、`TRASH_UNAVAILABLE`、`CONFIG_INVALID`、`CONFIG_WRITE_FAILED`、`BAD_OP`、`BODY_TOO_LARGE`。
 
 </details>
 
@@ -341,13 +344,14 @@ $DSH_HOME/session-autospace/
 | 缺失的能力 | 行为 |
 | --- | --- |
 | `webServer` 或 `connection` | 路由不注册，菜单入口行置灰并说明原因 |
-| `configEditor` | 设置页只读，开关置灰并说明原因 |
+| `configEditor` | 设置分区只读，开关置灰并说明原因 |
+| `workspaceRegistry` | 管理区整张卡片不渲染，路径与开关仍可用 |
 | 系统废纸篓不可用 | 删除动作置灰，保留归档，引导「在访达中显示」 |
 | `session/event` | 只靠客户端 blank 观测和激活清扫 |
 | `retainInfo` | 关闭「切换走自动消失」，改用激活清扫 |
-| `uiWorkspace` 或 `startSession` 形状变化 | 不安装包装，「新建会话」保持 DSH 原行为；菜单、设置页不受影响 |
+| `uiWorkspace` 或 `startSession` 形状变化 | 不安装包装，「新建会话」保持 DSH 原行为；菜单、设置分区不受影响 |
 | 记忆文件不可读 / 不可写 | 读取失败视为没有记忆；写入失败只记日志，本次页面内仍按新选择生效 |
-| 宿主槽位契约变化 | 不渲染并记一次日志，内置菜单不受影响 |
+| 宿主槽位契约变化 | 不渲染并记一次日志，内置菜单不受影响（`settings.section` 不存在时只是少一个设置分区） |
 
 ## 已知限制
 
@@ -356,7 +360,8 @@ $DSH_HOME/session-autospace/
 - **删除只有组合语义**：DSH 没有永久删除 API，所以删除 = 归档 + 把文件夹移入系统废纸篓。
 - **替换菜单依赖宿主契约**：`conversation.hero.workspace` 的 owner props 变化时，插件会退化为不渲染并记日志，而不是崩溃。
 - **记忆按 profile 保存**，不跨机器同步；`DSH_HOME` 未设置时退回 `~/.dsh`。
-- **「记住上次选择」依赖 `uiWorkspace.startSession` 仍是普通实例方法**。方法消失、改名或对象不可扩展时，只会回到 DSH 原行为，不影响菜单和设置页。
+- **「记住上次选择」依赖 `uiWorkspace.startSession` 仍是普通实例方法**。方法消失、改名或对象不可扩展时，只会回到 DSH 原行为，不影响菜单和设置分区。
+- **管理区按当前工作路径过滤**。换过工作路径后，旧会话仍是普通 DSH 会话，但不再出现在管理区；想继续管理它们，把工作路径改回原目录即可。
 
 ## 开发
 

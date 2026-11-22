@@ -39,9 +39,10 @@ Session Autospace adds a third choice: **one conversation, one folder, one sandb
 - **Native input and native send.** The input bar is not replaced, messages are not intercepted, and conversation content is not rewritten. On the first `turn/start` the plugin only removes the temporary workspace registration.
 - **Settles into Ungrouped.** The temporary group disappears; the conversation becomes a normal one. Its folder, `cwd`, and sandbox boundary never move.
 - **Remembers the last choice.** After **No workspace**, New Session keeps opening scratch conversations from the sidebar, title bar, or `⌘N` until you pick a real workspace. A conversation that already belongs to a real workspace still keeps New Session there.
-- **One settings page.** Working path, nine settings, and the scratch-conversation manager live under **Settings → Plugins → Session autospace**.
-- **Conversation management.** Search, filter, sort, open, rename, pin, archive, reveal, copy path, move to Trash, bulk actions, and maintenance.
-- **Safe deletion.** DSH has no permanent delete: deleting means archiving the conversation and moving its folder to the system Trash. A running conversation is refused first; the UI asks before stopping and archiving.
+- **One page in Settings.** Working path, seven switches, and the scratch-conversation manager live under **Settings → Autospace**. The plugin page keeps only the description, the enable switch, and uninstall.
+- **Conversation management.** Search, filter, sort, open, rename, pin, archive, reveal, copy path, move to Trash, bulk actions, and maintenance. Rows use two lines (title and badges, then session ID · size · time), so the narrow Settings panel never needs horizontal scrolling.
+- **Safe deletion.** DSH has no permanent delete: deleting means archiving the conversation and moving its folder to the system Trash. A running conversation is refused first; the UI asks before stopping and archiving. Deleting the same conversation twice reaches the same result instead of failing.
+- **Only its own conversations.** Before acting, the Host checks that the conversation's `cwd` is exactly `<working path>/<session id>`. Conversations left in an earlier working path are not listed and are never mistaken for missing folders or used to create phantom directories.
 - **Bilingual, keyboard-friendly, accessible.** Follows DSH's locale (`zh` / `en`). Menus, row menus, and dialogs have keyboard paths and focus restoration.
 
 ## Screens
@@ -63,13 +64,13 @@ The menu is still DSH's workspace menu: existing workspaces, a separator, then *
 - **Settle**: the first message is sent; the temporary group disappears and the conversation moves into **Ungrouped**, exactly like any other ungrouped conversation.
 - **Abandon**: switch away before sending; the blank conversation is archived and its empty folder goes to the system Trash (unless `abandonOnSwitch` is off).
 
-### Settings: path, switches, manager
+### Settings section: path, switches, manager
 
 [![The three settings cards: working path, feature switches, and scratch-conversation management](docs/images/settings.png)](docs/images/settings.png)
 
 <sub>Click the image for the full-size render.</sub>
 
-The working-path card accepts an absolute path and offers Choose, Show in Finder, and Restore default. Each feature switch takes effect immediately. The manager joins conversation rows with folder facts and maintenance actions.
+The Settings panel gains a **Session autospace** section. The working-path card accepts an absolute path and offers Choose, Show in Finder, and Restore default. Each feature switch takes effect immediately. The manager joins conversation rows with folder facts and maintenance actions. The plugin page itself keeps only the description, the enable switch, and uninstall.
 
 ## Install
 
@@ -121,7 +122,7 @@ Useful when iterating on the source; for a normal install use the GitHub command
 
 ```sh
 pnpm pack
-dsh plugin --profile <profile> add ./dsh-session-autospace-0.3.0.tgz
+dsh plugin --profile <profile> add ./dsh-session-autospace-0.4.0.tgz
 ```
 
 ### Upgrade and remove
@@ -209,7 +210,7 @@ Any error falls back to the original method; the wrapper is restored when the se
 
 ## Configuration
 
-Every field is on **Settings → Plugins → Session autospace**. Defaults also live in `cordis.patch.yml`.
+Every field is on **Settings → Autospace**. Defaults also live in `cordis.patch.yml`; the plugin page no longer carries settings.
 
 | Key | UI | Default | Notes / when off |
 | --- | --- | --- | --- |
@@ -245,7 +246,7 @@ Configuration writes go through the Host's `configEditor`. Saving rebuilds the p
 
 ## Manager
 
-The third card joins the client session list with the Host folder inventory by session id:
+The manager card in **Settings → Autospace** joins the client session list with the Host folder inventory by session id, listing only conversations under the current working path:
 
 | Action | Behaviour |
 | --- | --- |
@@ -255,13 +256,13 @@ The third card joins the client session list with the Host folder inventory by s
 | Archive / Unarchive | Archive is restorable; a running conversation asks before stopping |
 | Show in Finder | Reveals the folder through the Host |
 | Copy path | Copies the absolute folder path |
-| Move to Trash | Archives first, then moves the folder to the system Trash; never hard-deletes |
-| Bulk actions | Archive, unarchive, move to Trash; up to 100 rows at a time |
-| Reclaim new conversations | Archive blank conversations past the threshold and clean empty folders |
-| Clean orphan folders | Directories named `session-<uuid>` that no conversation claims |
-| Rebuild missing folders | Recreate a folder whose conversation still exists |
+| Move to Trash | Archives first, then moves the folder to the system Trash; never hard-deletes. A running conversation asks, then stops its current turn; an already-gone folder counts as done |
+| Bulk actions | Archive, unarchive, move to Trash. Each button addresses only the selected rows its verb applies to (archive skips archived rows); up to 100 rows at a time |
+| Reclaim new conversations | Archive blank conversations past the threshold and clean empty folders; conversations that are not this plugin's are skipped |
+| Clean orphan folders | Directories named `session-<uuid>` that no conversation claims and that are not freshly created; the session list is re-read right before deleting |
+| Rebuild missing folders | Recreate a folder only for a conversation whose `cwd` points at it; never creates phantom folders |
 
-Search covers title, session id, and path. Filters: All / Active / New / Archived / Folder missing. Sort: recently updated, title, size. The list grows with the number of conversations up to about ten rows (`min(52vh, 420px)`), then scrolls inside the card with the column header pinned, so the maintenance and status sections stay within reach. Destructive actions ask first and say that the archive is restorable and the folder goes to the Trash.
+Search covers title, session id, and path (an untitled conversation is still findable as New Session or by its display title). Filters: All / Active / New / Archived / Folder missing. Sort: recently updated, title, size. The list is capped at `min(46vh, 380px)` and scrolls inside the card with Select all pinned; selecting everything stops at 100 and says why. When the system Trash is unavailable the delete controls are disabled with a reason. Destructive actions ask first and say that the archive is restorable and the folder goes to the Trash. Opening a conversation closes the Settings panel first, then navigates.
 
 ## Data and privacy
 
@@ -299,7 +300,9 @@ $DSH_HOME/session-autospace/
 
 - Working path: absolute, no NUL, `mkdir -p`, then a stable `realpath`.
 - Target folder: under `realpath(root)`, basename equals the session id, `lstat` says directory, symlinks refused.
-- Session: must exist, `header.cwd` must equal the target folder's `realpath`; deletion refuses a running conversation.
+- Session: must exist, and `header.cwd` must be exactly `realpath(root)/<session id>`. Rename, pin, archive, trash, and every maintenance action pass this check first; a conversation outside the current working path gets `NOT_SCRATCH`.
+- Deletion: a running conversation gets `SESSION_RUNNING` by default; after the UI confirms, the retry carries `stop: true`, and the Host archives and stops the current turn. Deleting an already-gone folder returns the same successful end state.
+- Maintenance: `reclaimBlank`, `orphans`, and `rebuildMissing` re-read the session list and validate each id before acting; freshly created folders that may still be waiting for their session are skipped.
 - Requests: `POST` JSON, body ≤ 64 KiB, same-origin admission fence first; operations go through an allowlist, titles ≤ 200 characters, bulk ≤ 100 rows.
 - Errors carry a code and a relative message, never another path.
 - When the Trash is unavailable the plugin returns an explicit error and the UI points to Show in Finder; it never falls back to a hard delete.
@@ -324,13 +327,13 @@ The browser half and the Host half talk over same-origin POST. Every route retur
 | `/settle` | `{sessionId}` | `{settled, noop?}` |
 | `/abandon` | `{sessionId, trash?}` | `{abandoned, trashed?, trashError?, settled?}` |
 | `/inventory` | `{fresh?}` | `{root, folders, orphans}` |
-| `/session-op` | `{sessionId, op, title?}` | `{ok}` |
+| `/session-op` | `{sessionId, op, title?, stop?}` | `{ok}` |
 | `/probe` | `{path}` | `{path, exists, writable, projectRoot}` |
-| `/trash` | `{sessionId}` | `{archived, trashed, kept?, method?, trashError?, path?}` |
+| `/trash` | `{sessionId, stop?}` | `{archived, trashed, kept?, alreadyGone?, method?, trashError?, path?}` |
 | `/reveal` | `{sessionId? or path?}` | `{revealed}` |
 | `/maintenance` | `{op, ids?}` | `{changed, skipped}` |
 
-Common codes: `ROOT_INVALID`, `ROOT_UNWRITABLE`, `SESSION_CONFLICT`, `WORKSPACE_CREATE_FAILED`, `NOT_SCRATCH`, `SETTLE_FAILED`, `ARCHIVE_FAILED`, `SESSION_RUNNING`, `FOLDER_MISSING`, `OUT_OF_ROOT`, `SYMLINK_REJECTED`, `TRASH_UNAVAILABLE`, `CONFIG_INVALID`, `CONFIG_WRITE_FAILED`, `BODY_TOO_LARGE`.
+Common codes: `ROOT_INVALID`, `ROOT_UNWRITABLE`, `SESSION_CONFLICT`, `WORKSPACE_CREATE_FAILED`, `NOT_SCRATCH`, `SESSION_MISSING`, `SESSION_ARCHIVED`, `SETTLE_FAILED`, `ARCHIVE_FAILED`, `SESSION_RUNNING`, `FOLDER_MISSING`, `OUT_OF_ROOT`, `SYMLINK_REJECTED`, `TRASH_UNAVAILABLE`, `CONFIG_INVALID`, `CONFIG_WRITE_FAILED`, `BAD_OP`, `BODY_TOO_LARGE`.
 
 </details>
 
@@ -341,13 +344,14 @@ There is no exact-version gate and no `@deepseek-ai/*` entry in `peerDependencie
 | Missing capability | Behaviour |
 | --- | --- |
 | `webServer` or `connection` | Routes are not registered; the menu entry is disabled with a reason |
-| `configEditor` | Settings page is read-only; switches are disabled with a reason |
+| `configEditor` | The settings section is read-only; switches are disabled with a reason |
+| `workspaceRegistry` | The manager card is not rendered; path and switches still work |
 | System Trash unavailable | Delete is disabled; archive remains; UI points to Show in Finder |
 | `session/event` | Client blank observation and the activation sweep still settle |
 | `retainInfo` | "Discard on switching away" is off; the activation sweep handles cleanup |
-| `uiWorkspace` or a changed `startSession` shape | No wrapper is installed; New Session keeps DSH's behaviour; menu and settings still work |
+| `uiWorkspace` or a changed `startSession` shape | No wrapper is installed; New Session keeps DSH's behaviour; menu and settings section still work |
 | Memory file unreadable / unwritable | Unreadable means no memory; a failed write is logged, and the choice still applies for this page |
-| Host slot contract changes | Nothing renders and one log line is written; the built-in menu is unaffected |
+| Host slot contract changes | Nothing renders and one log line is written; the built-in menu is unaffected (a missing `settings.section` simply means one fewer Settings section) |
 
 ## Known limitations
 
@@ -356,7 +360,8 @@ There is no exact-version gate and no `@deepseek-ai/*` entry in `peerDependencie
 - **Delete only has a combined meaning.** DSH has no permanent-delete API, so delete = archive + move the folder to the system Trash.
 - **The replaced menu depends on a Host contract.** If the owner props of `conversation.hero.workspace` change, the plugin degrades to rendering nothing and logging, instead of crashing.
 - **The remembered choice is per profile.** It is not synced across machines; when `DSH_HOME` is unset the plugin falls back to `~/.dsh`.
-- **Remembering depends on `uiWorkspace.startSession` remaining an ordinary instance method.** If it disappears, is renamed, or the object becomes non-extensible, the plugin falls back to DSH's original behaviour; the menu and settings page are unaffected.
+- **Remembering depends on `uiWorkspace.startSession` remaining an ordinary instance method.** If it disappears, is renamed, or the object becomes non-extensible, the plugin falls back to DSH's original behaviour; the menu and settings section are unaffected.
+- **The manager follows the current working path.** After you change it, older conversations remain ordinary DSH conversations but leave the manager; point the working path back to manage them again.
 
 ## Development
 

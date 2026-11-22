@@ -6,8 +6,8 @@
  *   blank-session hero. It lists the real Workspaces, keeps the shipped
  *   "Add workspace…" action, and adds "No workspace", which asks the Host for a
  *   scratch session and opens it.
- * - `plugins.bundle.config` (keyed by the package name): the settings page —
- *   working path, feature switches, and the scratch-conversation manager.
+ * - `settings.section` (its own Settings page): working path, feature
+ *   switches, and the scratch-conversation manager.
  *
  * The page also owns the client-side settling channels: it watches each staged
  * conversation for its first turn (settle) and for the main view leaving it
@@ -26,7 +26,6 @@ window.__ModuleLoader__.load({
       useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore,
     } = React
 
-    const PACKAGE_NAME = 'dsh-session-autospace'
     const ROUTE_PREFIX = '/api/session-autospace'
     const SESSION_ID_PATTERN = /^session-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
     const LOCALE_NS = 'sessionAutospace'
@@ -43,6 +42,9 @@ window.__ModuleLoader__.load({
       'menu.failed': 'Could not start the conversation',
       'menu.hostUnavailable': 'Plugin host channel unavailable',
       'menu.reveal': 'Show in Finder',
+      'section.nav': 'Autospace',
+      'section.title': 'Session autospace',
+      'section.intro': 'Working path, feature switches, and the scratch conversations this plugin created.',
       'path.title': 'Working path',
       'path.desc': 'Every new conversation gets its own folder under this path, named after its session. That folder is the conversation\'s working directory and sandbox boundary.',
       'path.effective': 'In use',
@@ -81,15 +83,17 @@ window.__ModuleLoader__.load({
       'manage.emptyFilter': 'Nothing matches this filter.',
       'manage.count': '{total} total · ≈ {size}{blank}{missing}',
       'manage.countBlank': ' · {n} new',
-      'manage.countMissing': ' · {n} missing folder',
+      'manage.countMissing': ' · missing: {n}',
       'filter.all': 'All',
       'filter.active': 'Active',
       'filter.blank': 'New',
       'filter.archived': 'Archived',
       'filter.missing': 'Folder missing',
+      'filter.label': 'Filter conversations',
       'sort.updated': 'Recently updated',
       'sort.title': 'Title',
       'sort.size': 'Size',
+      'sort.label': 'Sort by',
       'group.today': 'Today',
       'group.yesterday': 'Yesterday',
       'group.week': 'This week',
@@ -104,22 +108,35 @@ window.__ModuleLoader__.load({
       'action.rename': 'Rename',
       'action.pin': 'Pin',
       'action.unpin': 'Unpin',
+      'action.pinArchived': 'Unarchive the conversation before pinning it.',
       'action.archive': 'Archive',
       'action.unarchive': 'Unarchive',
       'action.reveal': 'Show in Finder',
       'action.copyPath': 'Copy path',
       'action.trash': 'Move to Trash',
-      'action.more': 'More actions',
+      'action.trashRunning': 'Stop and move to Trash',
+      'action.more': 'Actions for this conversation',
+      'trash.unavailable': 'The system Trash is unavailable on this machine.',
       'bulk.selected': '{n} selected',
+      'bulk.selectAll': 'Select all',
       'bulk.archive': 'Archive',
       'bulk.unarchive': 'Unarchive',
       'bulk.trash': 'Move to Trash',
       'bulk.clear': 'Clear selection',
+      'bulk.limit': 'Bulk actions handle up to {n} conversations at a time.',
+      'bulk.limitShort': 'limit {n}',
+      'bulk.partial': '{failed} of {total} could not be updated.',
+      'bulk.keptFolders': '{n} folders stayed: the system Trash is unavailable.',
       'confirm.trash.title': 'Move to Trash?',
       'confirm.trash.body': 'The conversation is archived (restorable from the archive section) and its folder moves to the system Trash.',
       'confirm.trash.confirm': 'Move to Trash',
+      'confirm.trash.named': '“{name}” is archived (restorable from the archive section) and its folder moves to the system Trash.',
+      'confirm.trashRunning.title': 'Stop and move to Trash?',
+      'confirm.trashRunning.body': 'This conversation is still running. Moving it to the Trash stops the current turn, archives the conversation, and moves its folder to the system Trash.',
+      'confirm.trashRunning.confirm': 'Stop and move to Trash',
       'confirm.bulkTrash.title': 'Move {n} conversations to the Trash?',
       'confirm.bulkTrash.body': 'These conversations are archived (restorable from the archive section) and their folders move to the system Trash.',
+      'confirm.bulkTrashRunning.body': 'These conversations are archived (restorable from the archive section) and their folders move to the system Trash. Any conversation still running stops its current turn first.',
       'confirm.rename.title': 'Rename conversation',
       'confirm.rename.save': 'Rename',
       'confirm.reclaim.title': 'Reclaim untouched conversations?',
@@ -168,6 +185,8 @@ window.__ModuleLoader__.load({
       'confirm.archiveRunning.title': "Stop and archive?",
       'confirm.archiveRunning.body': "This conversation is still running. Archiving stops the current turn.",
       'confirm.archiveRunning.confirm': "Stop and archive",
+      'confirm.bulkArchiveRunning.title': "Stop running conversations and archive?",
+      'confirm.bulkArchiveRunning.body': "These conversations are archived. Any conversation still running stops its current turn first.",
       'toast.trashLeft': "Archived. The folder stayed: {reason}",
       'toast.trashSkipped': "Archived. The folder was kept because \"move folders to the Trash\" is off.",
       'path.checking': "Checking…",
@@ -193,6 +212,9 @@ window.__ModuleLoader__.load({
       'menu.failed': '无法开始这次对话',
       'menu.hostUnavailable': '插件宿主通道不可用',
       'menu.reveal': '在访达中显示',
+      'section.nav': '会话自动空间',
+      'section.title': '会话自动空间',
+      'section.intro': '工作路径、功能开关，以及插件创建的临时会话。',
       'path.title': '工作路径',
       'path.desc': '每个新对话都在此路径下获得以 session ID 命名的独立文件夹，它就是该对话的工作目录与沙盒边界。',
       'path.effective': '当前生效',
@@ -237,9 +259,11 @@ window.__ModuleLoader__.load({
       'filter.blank': '未开始',
       'filter.archived': '已归档',
       'filter.missing': '文件夹缺失',
+      'filter.label': '筛选会话',
       'sort.updated': '最近更新',
       'sort.title': '标题',
       'sort.size': '占用空间',
+      'sort.label': '排序方式',
       'group.today': '今天',
       'group.yesterday': '昨天',
       'group.week': '本周',
@@ -254,22 +278,35 @@ window.__ModuleLoader__.load({
       'action.rename': '重命名',
       'action.pin': '置顶',
       'action.unpin': '取消置顶',
+      'action.pinArchived': '请先取消归档，再置顶这个会话。',
       'action.archive': '归档',
       'action.unarchive': '取消归档',
       'action.reveal': '在访达中显示',
       'action.copyPath': '复制路径',
       'action.trash': '移入废纸篓',
-      'action.more': '更多操作',
+      'action.trashRunning': '停止并移入废纸篓',
+      'action.more': '此会话的操作',
+      'trash.unavailable': '本机无法使用系统废纸篓。',
       'bulk.selected': '已选 {n} 项',
+      'bulk.selectAll': '全选',
       'bulk.archive': '归档',
       'bulk.unarchive': '取消归档',
       'bulk.trash': '移入废纸篓',
       'bulk.clear': '取消选择',
+      'bulk.limit': '批量操作一次最多处理 {n} 个会话。',
+      'bulk.limitShort': '上限 {n}',
+      'bulk.partial': '{total} 个中有 {failed} 个未能更新。',
+      'bulk.keptFolders': '{n} 个文件夹未能回收：系统废纸篓不可用。',
       'confirm.trash.title': '移入废纸篓？',
       'confirm.trash.body': '会话将被归档（可在侧栏归档区恢复），文件夹移入系统废纸篓。',
       'confirm.trash.confirm': '移入废纸篓',
+      'confirm.trash.named': '「{name}」将被归档（可在归档区恢复），其文件夹移入系统废纸篓。',
+      'confirm.trashRunning.title': '停止并移入废纸篓？',
+      'confirm.trashRunning.body': '这个会话仍在运行。移入废纸篓会停止当前回合、归档会话，并把文件夹移入系统废纸篓。',
+      'confirm.trashRunning.confirm': '停止并移入废纸篓',
       'confirm.bulkTrash.title': '将 {n} 个会话移入废纸篓？',
       'confirm.bulkTrash.body': '这些会话将被归档（可在侧栏归档区恢复），它们的文件夹移入系统废纸篓。',
+      'confirm.bulkTrashRunning.body': '这些会话将被归档（可在侧栏归档区恢复），它们的文件夹移入系统废纸篓；仍在运行的会话会先停止当前回合。',
       'confirm.rename.title': '重命名会话',
       'confirm.rename.save': '重命名',
       'confirm.reclaim.title': '回收未开始的会话？',
@@ -318,6 +355,8 @@ window.__ModuleLoader__.load({
       'confirm.archiveRunning.title': "停止并归档？",
       'confirm.archiveRunning.body': "这个对话还在运行，归档会停止当前这一轮。",
       'confirm.archiveRunning.confirm': "停止并归档",
+      'confirm.bulkArchiveRunning.title': "停止运行中的会话并归档？",
+      'confirm.bulkArchiveRunning.body': "这些会话会被归档；仍在运行的会话会先停止当前回合。",
       'toast.trashLeft': "已归档。文件夹保留：{reason}",
       'toast.trashSkipped': "已归档。因为「删除时回收文件夹」关闭，文件夹被保留。",
       'path.checking': "正在检查…",
@@ -559,6 +598,33 @@ window.__ModuleLoader__.load({
     RUNTIME.saveConfig = saveConfig
     RUNTIME.notify = notify
 
+    /**
+     * Inert snapshots for a composition without the session or workspace
+     * source; a settings section must render even when those services are
+     * absent.
+     */
+    const EMPTY_SESSIONS = { ids: [], byId: {}, phase: "ready" }
+    const EMPTY_WORKSPACES = { items: [], archivedSessionIds: [], pinnedSessionIds: [], phase: "ready" }
+    const noopUnsubscribe = () => {}
+
+    /**
+     * Read one observable source without requiring the owner standard hooks.
+     * @param source - observable source, or undefined.
+     * @param fallback - snapshot used when the source is absent.
+     * @returns the current snapshot.
+     */
+    function useSourceSnapshot(source, fallback) {
+      const subscribe = useCallback(
+        listener => (source?.subscribe ? source.subscribe(listener) : noopUnsubscribe),
+        [source],
+      )
+      const getSnapshot = useCallback(
+        () => (source?.getSnapshot ? source.getSnapshot() : fallback),
+        [source, fallback],
+      )
+      return useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
+    }
+
     // ----------------------------------------------------------------- i18n ---
 
     const DICTS = { en: EN, zh: ZH }
@@ -650,9 +716,15 @@ window.__ModuleLoader__.load({
      * @param root - effective working path (may be unknown).
      * @returns true when it matches `<root>/session-<uuid>`.
      */
-    function isScratchCwd(cwd) {
+    function isScratchCwd(cwd, root) {
       if (typeof cwd !== 'string' || cwd === '') return false
-      return SESSION_ID_PATTERN.test(baseName(cwd))
+      const base = baseName(cwd)
+      if (!SESSION_ID_PATTERN.test(base)) return false
+      // With the effective working path known, a folder from an earlier path is
+      // an ordinary conversation here, not a scratch one: its immutable cwd
+      // still points at the old directory.
+      if (typeof root === 'string' && root !== '') return trimPath(cwd) === `${trimPath(root)}/${base}`
+      return true
     }
 
     /**
@@ -878,7 +950,10 @@ window.__ModuleLoader__.load({
 `
 
     const PAGE_CSS = `
-.dsa-page { display: flex; flex-direction: column; gap: 16px; padding: 2px 0 8px; max-width: 880px; }
+.dsa-section { display: flex; flex-direction: column; gap: 14px; max-width: 760px; color: var(--dsw-alias-label-primary) }
+.dsa-section-title { margin: 0; font-size: 18px; line-height: 26px; font-weight: 600; color: var(--dsw-alias-label-primary) }
+.dsa-section-intro { margin: -6px 0 0; font-size: 13px; line-height: 20px; color: var(--dsw-alias-label-tertiary) }
+.dsa-page { display: flex; flex-direction: column; gap: 16px; padding: 2px 0 8px; max-width: 760px; }
 .dsa-card {
   background: var(--dsw-alias-bg-layer-1);
   border: 1px solid var(--dsw-alias-border-l1);
@@ -971,8 +1046,12 @@ window.__ModuleLoader__.load({
 }
 .dsa-list {
   display: flex; flex-direction: column; gap: 2px;
-  max-height: min(52vh, 420px);
+  max-height: min(46vh, 380px);
   overflow-y: auto;
+  padding: 0;
+  border: 1px solid var(--dsw-alias-border-l1);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-1) 55%, transparent);
   scrollbar-width: thin;
   scrollbar-color: var(--dsw-alias-border-l2) transparent;
 }
@@ -983,26 +1062,32 @@ window.__ModuleLoader__.load({
   border: 2px solid transparent; border-radius: 999px; background-clip: padding-box;
 }
 .dsa-list::-webkit-scrollbar-track { background: transparent }
-.dsa-list-head {
+.dsa-list-tools {
   position: sticky; top: 0; z-index: 2;
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 10px;
   background: var(--dsw-alias-bg-layer-1);
   border-bottom: 1px solid var(--dsw-alias-border-l1);
-  border-radius: 8px 8px 0 0;
+  border-radius: 10px 10px 0 0;
+  font-size: 12px; color: var(--dsw-alias-label-secondary);
 }
-.dsa-list-head:hover { background: var(--dsw-alias-bg-layer-1) }
-.dsa-group-label { font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-secondary); padding: 10px 8px 4px }
+.dsa-check-all { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; color: var(--dsw-alias-label-secondary); font-size: 12px }
+.dsa-group-label { font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-secondary); padding: 10px 10px 4px }
 .dsa-item-row {
-  display: flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 8px;
+  display: flex; align-items: flex-start; gap: 8px; padding: 7px 10px;
   border-radius: 8px; color: var(--dsw-alias-label-primary);
 }
 .dsa-item-row:hover { background: var(--dsw-alias-bg-layer-2) }
 .dsa-item-row[data-selected="true"] { background: color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent) }
-.dsa-check { width: 14px; height: 14px; margin: 0; accent-color: var(--dsw-alias-brand-primary); flex: none; cursor: pointer }
-.dsa-item-title { flex: 1 1 200px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px }
-.dsa-item-id { flex: none; font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, monospace); font-size: 11px; color: var(--dsw-alias-label-secondary) }
-.dsa-item-size { flex: none; width: 72px; text-align: right; font-size: 12px; color: var(--dsw-alias-label-secondary); font-variant-numeric: tabular-nums }
-.dsa-item-time { flex: none; width: 88px; text-align: right; font-size: 12px; color: var(--dsw-alias-label-secondary) }
-.dsa-item-actions { flex: none; display: flex; align-items: center }
+.dsa-check { width: 14px; height: 14px; margin: 3px 0 0; accent-color: var(--dsw-alias-brand-primary); flex: none; cursor: pointer }
+.dsa-item-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px }
+.dsa-item-top { display: flex; align-items: center; gap: 6px; min-width: 0; flex-wrap: wrap }
+.dsa-item-title { flex: 1 1 160px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; line-height: 18px }
+.dsa-item-pin { display: inline-flex; flex: none; color: var(--dsw-alias-label-secondary) }
+.dsa-item-meta { display: flex; align-items: center; gap: 6px; font-size: 11px; line-height: 16px; color: var(--dsw-alias-label-secondary); min-width: 0 }
+.dsa-item-id { font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, monospace) }
+.dsa-item-sep { opacity: .55 }
+.dsa-item-actions { flex: none; display: flex; align-items: center; margin-top: -2px }
 .dsa-empty { padding: 18px 8px; font-size: 13px; line-height: 20px; color: var(--dsw-alias-label-secondary); text-align: center }
 .dsa-bulk {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
@@ -1013,6 +1098,7 @@ window.__ModuleLoader__.load({
 }
 .dsa-error { font-size: 12px; line-height: 18px; color: var(--dsw-alias-state-error-primary) }
 .dsa-note { font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-secondary) }
+.dsa-notes { display: flex; flex-direction: column; gap: 2px; font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-secondary) }
 .dsa-details { border-top: 1px solid var(--dsw-alias-border-l1); padding-top: 10px }
 .dsa-details summary { cursor: pointer; font-size: 12px; color: var(--dsw-alias-label-secondary); list-style: none }
 .dsa-details summary::-webkit-details-marker { display: none }
@@ -1020,10 +1106,11 @@ window.__ModuleLoader__.load({
 .dsa-facts { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-secondary) }
 .dsa-facts b { color: var(--dsw-alias-label-primary); font-weight: 500 }
 .dsa-toast {
-  position: sticky; bottom: 0; align-self: flex-start;
-  display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px;
+  position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%);
+  z-index: 2147483200; max-width: min(560px, calc(100vw - 48px));
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 8px;
   background: var(--dsw-alias-bg-overlay); border: 1px solid var(--dsw-alias-border-l1);
-  font-size: 12px; color: var(--dsw-alias-label-primary); box-shadow: var(--dsw-shadow-lv2, 0 6px 18px rgba(0, 0, 0, .12));
+  font-size: 12px; color: var(--dsw-alias-label-primary); box-shadow: var(--dsw-shadow-lv2, 0 6px 18px rgba(0, 0, 0, .18));
   animation: dsa-menu-in 120ms ease-out;
 }
 .dsa-overlay { position: fixed; inset: 0; z-index: 2147483100; background: var(--dsw-alias-bg-mask-1, rgba(0, 0, 0, .28)); display: flex; align-items: center; justify-content: center; padding: 24px }
@@ -1050,8 +1137,10 @@ window.__ModuleLoader__.load({
 .dsa-pop-item:disabled { color: var(--dsw-alias-label-secondary); cursor: default }
 .dsa-pop-item[data-tone="danger"] { color: var(--dsw-alias-state-error-primary) }
 .dsa-pop-item:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: -2px }
-@media (max-width: 720px) {
-  .dsa-item-size, .dsa-item-time { display: none }
+@media (max-width: 640px) {
+  .dsa-item-id, .dsa-item-sep { display: none }
+  .dsa-toolbar { align-items: stretch }
+  .dsa-search { flex-basis: 100% }
 }
 `
 
@@ -1088,7 +1177,7 @@ window.__ModuleLoader__.load({
      * @param props - `title`, `body`, `confirmLabel`, `tone`, `onCancel`, `onConfirm`, `children`, `busy`.
      * @returns the dialog, or null.
      */
-    function Dialog({ title, body, confirmLabel, tone, onCancel, onConfirm, children, busy }) {
+    function Dialog({ title, body, confirmLabel, tone, onCancel, onConfirm, children, busy, confirmDisabled }) {
       const dialogRef = useRef(null)
       const confirmRef = useRef(null)
       const cancelRef = useRef(null)
@@ -1152,7 +1241,7 @@ window.__ModuleLoader__.load({
             type: 'button',
             className: 'dsa-btn',
             'data-tone': tone ?? 'primary',
-            disabled: busy === true,
+            disabled: busy === true || confirmDisabled === true,
             onClick: onConfirm,
           }, confirmLabel),
         ),
@@ -1674,24 +1763,26 @@ window.__ModuleLoader__.load({
      * @param inventory - Host folder facts.
      * @returns rows sorted by updated time.
      */
-    function buildRows(sessions, workspacesState, inventory) {
+    function buildRows(sessions, workspacesState, inventory, root) {
       const archived = new Set((workspacesState?.archivedSessionIds ?? []).map(String))
       const pinned = new Set((workspacesState?.pinnedSessionIds ?? []).map(String))
       const folders = new Map((inventory?.folders ?? []).map(folder => [String(folder.id), folder]))
+      const byId = sessions?.byId ?? {}
+      const ids = Array.isArray(sessions?.ids) ? sessions.ids : Object.keys(byId)
       const rows = []
-      for (const id of sessions.ids) {
-        const summary = sessions.byId[id]
+      for (const id of ids) {
+        const summary = byId[id]
         if (summary === undefined) continue
-        if (!isScratchCwd(summary.cwd)) continue
+        if (!isScratchCwd(summary.cwd, root)) continue
         const folder = folders.get(String(id))
         rows.push({
           id: String(id),
-          title: typeof summary.title === 'string' && summary.title !== '' ? summary.title : undefined,
-          displayTitle: summary.displayTitle,
+          title: typeof summary.title === 'string' && summary.title.trim() !== '' ? summary.title : undefined,
+          displayTitle: typeof summary.displayTitle === 'string' ? summary.displayTitle : undefined,
           blank: summary.blank === true,
           running: summary.running === true,
           updatedAt: Number(summary.updatedAt) || 0,
-          cwd: summary.cwd,
+          cwd: typeof summary.cwd === 'string' ? summary.cwd : '',
           archived: archived.has(String(id)),
           pinned: pinned.has(String(id)),
           folder,
@@ -1702,16 +1793,43 @@ window.__ModuleLoader__.load({
     }
 
     /**
+     * Display label for one row, always a string even when the Host has no
+     * title yet (a blank conversation, or a session whose title was cleared).
+     * @param row - row model.
+     * @param t - translator.
+     * @returns the label.
+     */
+    function rowLabel(row, t) {
+      if (typeof row.title === 'string' && row.title.trim() !== '') return row.title
+      if (row.blank === true) return t('row.new')
+      if (typeof row.displayTitle === 'string' && row.displayTitle.trim() !== '') return row.displayTitle
+      return t('row.untitled')
+    }
+
+    /**
+     * Whether one row matches a lower-cased search term.
+     * @param row - row model with its label.
+     * @param term - lower-cased query.
+     * @param t - translator.
+     * @returns true when the row matches.
+     */
+    function rowMatchesQuery(row, term, t) {
+      if (term === '') return true
+      const haystack = rowLabel(row, t) + '\n' + row.id + '\n' + row.cwd
+      return haystack.toLowerCase().includes(term)
+    }
+
+    /**
      * One row's action popover.
-     * @param props - `anchor`, `row`, `t`, `onClose`, `onSelect`.
+     * @param props - `anchor`, `row`, `t`, `trashAvailable`, `onClose`, `onSelect`.
      * @returns the popover.
      */
-    function RowMenu({ anchor, row, t, onClose, onSelect }) {
+    function RowMenu({ anchor, row, t, trashAvailable, onClose, onSelect }) {
       const popRef = useRef(null)
       const firstRef = useRef(null)
       const closeLatest = useRef(onClose)
       closeLatest.current = onClose
-      const box = useAnchoredBox(anchor, true, 268, 208, onClose)
+      const box = useAnchoredBox(anchor, true, 236, 204, onClose)
       useEffect(() => {
         const timer = setTimeout(() => { firstRef.current?.focus?.() }, 0)
         const onDown = (event) => {
@@ -1747,10 +1865,19 @@ window.__ModuleLoader__.load({
         // eslint-disable-next-line react-hooks/exhaustive-deps
       }, [])
       if (box === null) return null
+      const missingFolder = row.exists === false
+      const trashBlocked = missingFolder || trashAvailable === false
+      const trashTitle = trashAvailable === false ? t('trash.unavailable') : missingFolder ? t('badge.missing') : undefined
       const items = [
         { id: 'open', label: t('action.open'), icon: IconExternal },
         { id: 'rename', label: t('action.rename'), icon: IconPencil },
-        { id: row.pinned ? 'unpin' : 'pin', label: row.pinned ? t('action.unpin') : t('action.pin'), icon: IconPin },
+        {
+          id: row.pinned ? 'unpin' : 'pin',
+          label: row.pinned ? t('action.unpin') : t('action.pin'),
+          icon: IconPin,
+          disabled: row.archived && !row.pinned,
+          title: row.archived && !row.pinned ? t('action.pinArchived') : undefined,
+        },
         {
           id: 'archive',
           label: row.archived
@@ -1758,9 +1885,16 @@ window.__ModuleLoader__.load({
             : row.running ? t('action.archiveRunning') : t('action.archive'),
           icon: IconArchive,
         },
-        { id: 'reveal', label: t('action.reveal'), icon: IconReveal, disabled: row.exists === false },
+        { id: 'reveal', label: t('action.reveal'), icon: IconReveal, disabled: missingFolder, title: missingFolder ? t('badge.missing') : undefined },
         { id: 'copy', label: t('action.copyPath'), icon: IconCopy },
-        { id: 'trash', label: t('action.trash'), icon: IconTrash, tone: 'danger', disabled: row.exists === false },
+        {
+          id: 'trash',
+          label: row.running && !row.archived ? t('action.trashRunning') : t('action.trash'),
+          icon: IconTrash,
+          tone: 'danger',
+          disabled: trashBlocked,
+          title: trashTitle,
+        },
       ]
       return ReactDOM.createPortal(h(React.Fragment, null,
         h('style', { key: 'style' }, PAGE_CSS),
@@ -1778,44 +1912,47 @@ window.__ModuleLoader__.load({
           className: 'dsa-pop-item',
           'data-tone': item.tone,
           disabled: item.disabled === true,
+          title: item.title,
           onClick: () => { onSelect(item.id) },
         }, h(item.icon, { size: 16, key: 'i' }), h('span', { key: 'l' }, item.label)))),
       ), document.body)
     }
 
     /**
-     * The bundle's settings entry: a one-line summary for the row, the full page
-     * for the bundle page.
-     * @param props - slot props (`view`).
-     * @returns the requested view.
+     * The Settings section: its own heading plus the page cards. The shell
+     * supplies the nav row and the padded scroll column, nothing else.
+     * @param props - section owner props (`close`).
+     * @returns the section.
      */
-    function ConfigEntry(props) {
+    function SettingsSection(props) {
       const [t] = useT()
-      const state = useStore()
-      const status = state.status
-      if (props.view === 'summary') {
-        if (status === null) return h(React.Fragment, null, t('path.title'))
-        const root = status.configured ? status.root : status.defaultRoot
-        return h(React.Fragment, null, `${t('path.title')}: ${root}`)
-      }
-      return h(SettingsPage, { useSessions: props.useSessions, useWorkspaces: props.useWorkspaces })
+      return h('div', { className: 'dsa-section' },
+        h('h2', { key: 'title', className: 'dsa-section-title' }, t('section.title')),
+        h('p', { key: 'intro', className: 'dsa-section-intro' }, t('section.intro')),
+        h(SettingsPage, { key: 'page', close: props.close }),
+      )
     }
 
     /**
-     * The full settings page: working path, feature switches, and the manager.
-     * @param props - standard slot hooks.
+     * The settings content: working path, feature switches, and the manager.
+     * @param props - `close` from the settings shell.
      * @returns the page.
      */
-    function SettingsPage(props) {
+    function SettingsPage({ close }) {
       const [t] = useT()
       const state = useStore()
       const status = state.status
       const inventory = state.inventory
-      const sessions = props.useSessions(snapshot => snapshot)
-      const workspacesState = props.useWorkspaces(snapshot => snapshot)
+      const ctx = RUNTIME.ctx
+      const sessions = useSourceSnapshot(ctx?.sessions?.list, EMPTY_SESSIONS)
+      const workspacesState = useSourceSnapshot(ctx?.get?.('workspaces')?.list, EMPTY_WORKSPACES)
       const root = status?.root
       const config = status?.config
       const hostDown = state.statusError !== null
+      const trashAvailable = status?.caps?.trash !== false
+      // Without the workspace registry the manager could not archive, pin, or
+      // trash anything; show the rest of the section instead of dead buttons.
+      const managerAvailable = status?.caps?.workspaceRegistry !== false
 
       const [draftRoot, setDraftRoot] = useState(null)
       const [pathMessage, setPathMessage] = useState(null)
@@ -1843,45 +1980,43 @@ window.__ModuleLoader__.load({
         setHoursDraft(current => (current === null ? String(config.autoReclaimHours) : current))
       }, [config?.workspaceRoot, config?.autoReclaimHours])
 
+      // The label lives on the row model so search, sorting, and the dialog
+      // title all agree, and no path is left undefined for a blank session.
       const rows = useMemo(
-        () => buildRows(sessions, workspacesState, inventory),
-        [sessions, workspacesState, inventory],
+        () => buildRows(sessions, workspacesState, inventory, status?.root).map(row => ({ ...row, label: rowLabel(row, t) })),
+        [sessions, workspacesState, inventory, status?.root, t],
       )
 
-      const searchTerm = useDebounced(query.trim().toLowerCase(), 250)
+      const searchTerm = useDebounced(query.trim().toLowerCase(), 220)
 
       const visible = useMemo(() => {
-        const missing = rows.filter(row => row.exists === false).length
         let list = rows
-        if (searchTerm !== '') {
-          list = list.filter(row => row.title.toLowerCase().includes(searchTerm)
-            || row.id.toLowerCase().includes(searchTerm)
-            || String(row.cwd ?? '').toLowerCase().includes(searchTerm))
-        }
+        if (searchTerm !== '') list = list.filter(row => rowMatchesQuery(row, searchTerm, t))
         if (filter === 'active') list = list.filter(row => row.running && !row.archived)
         else if (filter === 'blank') list = list.filter(row => row.blank && !row.archived)
         else if (filter === 'archived') list = list.filter(row => row.archived)
         else if (filter === 'missing') list = list.filter(row => row.exists === false)
         const sorted = [...list]
-        if (sort === 'title') sorted.sort((a, b) => a.title.localeCompare(b.title))
+        if (sort === 'title') sorted.sort((a, b) => a.label.localeCompare(b.label))
         else if (sort === 'size') sorted.sort((a, b) => (b.folder?.bytes ?? 0) - (a.folder?.bytes ?? 0))
         else sorted.sort((a, b) => b.updatedAt - a.updatedAt)
-        return { list: sorted, missing }
+        return sorted
       }, [rows, searchTerm, filter, sort, t])
 
-      const groups = useMemo(() => groupRows(visible.list, t), [visible.list, t])
+      const groups = useMemo(() => groupRows(visible, t), [visible, t])
 
       const totalBytes = useMemo(() => rows.reduce((sum, row) => sum + (row.folder?.bytes ?? 0), 0), [rows])
       const blankCount = useMemo(() => rows.filter(row => row.blank && !row.archived).length, [rows])
+      const missingCount = useMemo(() => rows.filter(row => row.exists === false).length, [rows])
 
       const reclaimHours = config?.autoReclaimHours ?? 24
       const thresholdMs = (reclaimHours > 0 ? reclaimHours : 24) * 3_600_000
       const reclaimIds = useMemo(
-        () => rows.filter(row => row.blank && !row.archived && Date.now() - row.updatedAt > thresholdMs).map(row => row.id),
+        () => rows.filter(row => row.blank && !row.archived && Date.now() - row.updatedAt > thresholdMs).map(row => row.id).slice(0, MAX_BULK),
         [rows, thresholdMs],
       )
-      const orphans = useMemo(() => (inventory?.orphans ?? []).map(String), [inventory])
-      const missingIds = useMemo(() => rows.filter(row => row.exists === false).map(row => row.id), [rows])
+      const orphans = useMemo(() => (inventory?.orphans ?? []).map(String).slice(0, MAX_BULK), [inventory])
+      const missingIds = useMemo(() => rows.filter(row => row.exists === false).map(row => row.id).slice(0, MAX_BULK), [rows])
 
       /**
        * Write one config patch, confirming it landed before reporting success.
@@ -1894,9 +2029,7 @@ window.__ModuleLoader__.load({
         return ok
       }, [t])
 
-      /**
-       * Commit the working-path input.
-       */
+      /** Commit the working-path input. */
       const commitPath = useCallback(async () => {
         const value = (draftRoot ?? '').trim()
         if (value !== '' && !value.startsWith('/') && !value.startsWith('~/')) {
@@ -1927,12 +2060,10 @@ window.__ModuleLoader__.load({
         }
       }, [config?.workspaceRoot, draftRoot, t])
 
-      /**
-       * Pick a directory for the working path.
-       */
+      /** Pick a directory for the working path. */
       const choosePath = useCallback(async () => {
-        const ui = RUNTIME.ctx.get('uiWorkspace')
-        if (!ui) {
+        const ui = RUNTIME.ctx?.get?.('uiWorkspace')
+        if (!ui || typeof ui.pickDirectory !== 'function') {
           setPathError(t('menu.hostUnavailable'))
           return
         }
@@ -1968,9 +2099,7 @@ window.__ModuleLoader__.load({
         }
       }, [draftRoot, config?.workspaceRoot])
 
-      /**
-       * Reveal the effective working path in the desktop file manager.
-       */
+      /** Reveal the effective working path in the desktop file manager. */
       const revealRoot = useCallback(async () => {
         try {
           await request('/reveal', { path: status?.root ?? '' })
@@ -1991,11 +2120,10 @@ window.__ModuleLoader__.load({
         setBusyAction(false)
       }, [applyPatch])
 
-      /**
-       * Commit the reclaim threshold.
-       */
+      /** Commit the reclaim threshold. */
       const commitHours = useCallback(async () => {
-        const parsed = Number(hoursDraft)
+        const raw = String(hoursDraft ?? '').trim()
+        const parsed = raw === '' ? NaN : Number(raw)
         if (!Number.isFinite(parsed) || parsed < 0 || parsed > 8760) {
           setHoursDraft(String(config?.autoReclaimHours ?? 24))
           return
@@ -2006,30 +2134,36 @@ window.__ModuleLoader__.load({
         setBusyAction(false)
       }, [applyPatch, config?.autoReclaimHours, hoursDraft])
 
-      /**
-       * Human label for one row, matching the list cell.
-       * @param row - row model.
-       * @returns the label.
-       */
-      const labelOf = useCallback(
-        row => (row.title ?? (row.blank ? t('row.new') : row.displayTitle)),
-        [t],
-      )
-
-      /**
-       * Report what a delete did: archived, folder moved, or folder kept.
-       * @param result - the Host's delete value.
-       */
+      /** Report what a delete did: archived, folder moved, or folder kept. */
       const reportDelete = useCallback((result) => {
         if (result === undefined) return
-        if (result.trashed === true) { notify(t('toast.done')); return }
+        if (result.trashed === true || result.alreadyGone === true) { notify(t('toast.done')); return }
         if (result.kept === true) { notify(t('toast.trashSkipped')); return }
         if (typeof result.trashError === 'string') notify(t('toast.trashLeft', { reason: result.trashError }))
       }, [t])
 
-      /**
-       * Run the open confirmation dialog.
-       */
+      /** Run one bulk session operation, reporting partial failures. */
+      const runBulk = useCallback(async (ids, op, options) => {
+        if (ids.length === 0) return
+        setBusyAction(true)
+        let failed = 0
+        try {
+          for (const id of ids) {
+            try {
+              await RUNTIME.op(id, op, undefined, options)
+            } catch {
+              failed += 1
+            }
+          }
+          if (failed === 0) setSelected(new Set())
+          notify(failed === 0 ? t('toast.done') : t('bulk.partial', { failed, total: ids.length }))
+          void refreshStatus()
+        } finally {
+          setBusyAction(false)
+        }
+      }, [t])
+
+      /** Run the open confirmation dialog. */
       const runDialog = useCallback(async () => {
         if (dialog === null) return
         setDialogBusy(true)
@@ -2037,19 +2171,36 @@ window.__ModuleLoader__.load({
           if (dialog.kind === 'rename') {
             const title = String(dialog.value ?? '').trim()
             if (title !== '' && title !== dialog.row.title) await RUNTIME.op(dialog.row.id, 'rename', title)
-          } else if (dialog.kind === 'trash') {
-            const result = await RUNTIME.trash(dialog.row.id)
+          } else if (dialog.kind === 'trash' || dialog.kind === 'trashRunning') {
+            const result = await RUNTIME.trash(dialog.row.id, { stop: dialog.kind === 'trashRunning' })
             reportDelete(result)
             setSelected(current => without(current, dialog.row.id))
           } else if (dialog.kind === 'bulkTrash') {
-            const deleted = []
-            for (const id of dialog.ids) deleted.push(await RUNTIME.trash(id))
+            const results = []
+            for (const id of dialog.ids) {
+              try {
+                results.push({ value: await RUNTIME.trash(id, { stop: true }) })
+              } catch {
+                results.push({ failed: true })
+              }
+            }
             setSelected(new Set())
-            const kept = deleted.filter(result => result !== undefined && result.trashed !== true).length
-            if (kept === 0) notify(t('toast.done'))
-            else notify(t('toast.trashLeft', { reason: t('bulk.keptFolders', { n: kept }) }))
+            const failed = results.filter(entry => entry.failed === true).length
+            const kept = results.filter(entry => entry.value?.kept === true).length
+            const left = results.filter(entry => entry.value
+              && entry.value.trashed !== true
+              && entry.value.kept !== true
+              && entry.value.alreadyGone !== true).length
+            if (failed > 0) notify(t('bulk.partial', { failed, total: dialog.ids.length }))
+            else if (kept > 0) notify(t('toast.trashSkipped'))
+            else if (left > 0) notify(t('bulk.keptFolders', { n: left }))
+            else notify(t('toast.done'))
           } else if (dialog.kind === 'archiveRunning') {
-            await RUNTIME.op(dialog.row.id, 'archive')
+            await RUNTIME.op(dialog.row.id, 'archive', undefined, { stop: true })
+          } else if (dialog.kind === 'bulkArchiveRunning') {
+            setDialog(null)
+            setDialogBusy(false)
+            await runBulk(dialog.ids, 'archive', { stop: true })
           } else if (dialog.kind === 'reclaim') {
             const result = await RUNTIME.maintain('reclaimBlank', dialog.ids)
             setMaintenanceNote(t('maintain.result', { changed: result.changed.length, skipped: result.skipped.length }))
@@ -2065,42 +2216,28 @@ window.__ModuleLoader__.load({
           void refreshStatus()
           void refreshInventory(true)
         }
-      }, [dialog, reportDelete, t])
+      }, [dialog, reportDelete, runBulk, t])
 
-      /**
-       * Apply one bulk operation without a confirmation step (both are reversible).
-       * @param ids - selected ids.
-       * @param op - archive or unarchive.
-       */
-      const runBulk = useCallback(async (ids, op) => {
-        setBusyAction(true)
-        try {
-          for (const id of ids) await RUNTIME.op(id, op)
-          setSelected(new Set())
-          void refreshStatus()
-        } catch (error) {
-          notify(messageOf(error))
-        } finally {
-          setBusyAction(false)
-        }
-      }, [])
-
-      /**
-       * Run one row action.
-       * @param row - row model.
-       * @param action - action id.
-       */
-      const onRowAction = useCallback(async (row, action) => {
+      /** Run one row action. */
+      const runRowAction = useCallback(async (row, action) => {
         setMenuFor(null)
+        if (action === 'open') {
+          const ui = RUNTIME.ctx?.get?.('uiWorkspace')
+          if (!ui || typeof ui.openSession !== 'function') {
+            notify(t('menu.hostUnavailable'))
+            return
+          }
+          // The settings panel covers the conversation it opens, so leave the
+          // panel first; the section and its state unmount with it.
+          if (typeof close === 'function') close()
+          ui.openSession(row.id)
+          return
+        }
+        if (action === 'rename') {
+          setDialog({ kind: 'rename', row, value: row.label })
+          return
+        }
         try {
-          if (action === 'open') {
-            RUNTIME.ctx.uiWorkspace.openSession(row.id)
-            return
-          }
-          if (action === 'rename') {
-            setDialog({ kind: 'rename', row, value: row.title ?? '' })
-            return
-          }
           if (action === 'reveal') {
             await RUNTIME.reveal(row.id)
             notify(t('toast.revealed'))
@@ -2116,7 +2253,7 @@ window.__ModuleLoader__.load({
             return
           }
           if (action === 'trash') {
-            setDialog({ kind: 'trash', row })
+            setDialog({ kind: row.running && !row.archived ? 'trashRunning' : 'trash', row })
             return
           }
           if (action === 'archive') {
@@ -2135,14 +2272,27 @@ window.__ModuleLoader__.load({
         } catch (error) {
           notify(messageOf(error))
         }
-      }, [t])
+      }, [close, t])
 
       const selectedIds = useMemo(
         () => [...selected].filter(id => rows.some(row => row.id === id)).slice(0, MAX_BULK),
         [selected, rows],
       )
+      const selectedRows = useMemo(
+        () => selectedIds.map(id => rows.find(row => row.id === id)).filter(row => row !== undefined),
+        [selectedIds, rows],
+      )
+      // A selection can mix archived, running, and clean rows; each bulk
+      // button addresses only the rows its verb applies to.
+      const bulkTargets = useMemo(() => ({
+        archive: selectedRows.filter(row => !row.archived).map(row => row.id),
+        unarchive: selectedRows.filter(row => row.archived).map(row => row.id),
+        trash: selectedRows.map(row => row.id),
+        running: selectedRows.filter(row => row.running && !row.archived).length,
+      }), [selectedRows])
 
-      const allSelected = visible.list.length > 0 && visible.list.every(row => selected.has(row.id))
+      const allSelected = visible.length > 0 && visible.every(row => selected.has(row.id))
+      const partialSelected = !allSelected && visible.some(row => selected.has(row.id))
 
       const toggleSelected = useCallback((id) => {
         setSelected((current) => {
@@ -2154,19 +2304,26 @@ window.__ModuleLoader__.load({
       }, [])
 
       const selectAllVisible = useCallback(() => {
+        const missing = visible.filter(row => !selected.has(row.id))
+        if (allSelected) {
+          setSelected((current) => {
+            const next = new Set(current)
+            for (const row of visible) next.delete(row.id)
+            return next
+          })
+          return
+        }
+        if (missing.length === 0) return
+        const room = Math.max(0, MAX_BULK - selected.size)
+        if (missing.length > room) notify(t('bulk.limit', { n: MAX_BULK }))
+        const additions = missing.slice(0, room).map(row => row.id)
+        if (additions.length === 0) return
         setSelected((current) => {
           const next = new Set(current)
-          if (visible.list.every(row => next.has(row.id)) && visible.list.length > 0) {
-            for (const row of visible.list) next.delete(row.id)
-            return next
-          }
-          for (const row of visible.list) {
-            if (next.size >= MAX_BULK) break
-            next.add(row.id)
-          }
+          for (const id of additions) next.add(id)
           return next
         })
-      }, [visible.list])
+      }, [allSelected, selected, visible, t])
 
       if (status === null) {
         return h('div', { className: 'dsa-page' },
@@ -2208,7 +2365,9 @@ window.__ModuleLoader__.load({
         actions: (config?.workspaceRoot ?? '') === '' ? h(Tag, { tone: 'muted' }, t('path.default')) : null,
       },
       h('div', { key: 'label', className: 'dsa-label' }, t('path.effective')),
-      h('div', { key: 'row', className: 'dsa-row' },
+      // The editable value and its one primary action stay on the first line;
+      // the secondary actions sit under it, so Save never wraps alone.
+      h('div', { key: 'row', className: 'dsa-row', style: { flexWrap: 'nowrap' } },
         h('input', {
           className: 'dsa-input dsa-grow',
           value: draftValue,
@@ -2225,6 +2384,15 @@ window.__ModuleLoader__.load({
             if (event.key === 'Enter') { event.preventDefault(); void commitPath() }
           },
         }),
+        h('button', {
+          type: 'button',
+          className: 'dsa-btn',
+          'data-tone': 'primary',
+          disabled: !pathDirty || state.saving,
+          onClick: () => { void commitPath() },
+        }, state.saving ? t('path.saving') : t('path.save')),
+      ),
+      h('div', { key: 'tools', className: 'dsa-row' },
         h('button', { type: 'button', className: 'dsa-btn', onClick: () => { void choosePath() } }, t('path.choose')),
         h('button', {
           type: 'button',
@@ -2246,13 +2414,6 @@ window.__ModuleLoader__.load({
             })
           },
         }, t('path.reset')),
-        h('button', {
-          type: 'button',
-          className: 'dsa-btn',
-          'data-tone': 'primary',
-          disabled: !pathDirty || state.saving,
-          onClick: () => { void commitPath() },
-        }, state.saving ? t('path.saving') : t('path.save')),
       ),
       pathError === null ? null : h('div', { key: 'err', className: 'dsa-error' }, pathError),
       pathMessage === null ? null : h('div', { key: 'msg', className: 'dsa-note' }, pathMessage),
@@ -2299,7 +2460,7 @@ window.__ModuleLoader__.load({
         title: t('toggle.management'),
         description: t('toggle.management.desc'),
         checked: config?.management !== false,
-        disabled: busyAction || state.saving || status.caps?.configEditor === false,
+        disabled: busyAction || state.saving || !managerAvailable || status.caps?.configEditor === false,
         onChange: (next) => { void toggleFeature('management', next) },
       }),
       h(FeatureRow, {
@@ -2354,6 +2515,65 @@ window.__ModuleLoader__.load({
         ? null
         : h('div', { key: 'cfgErr', className: 'dsa-error' }, state.configError.message)
 
+      const filterButtons = [
+        ['all', t('filter.all')],
+        ['active', t('filter.active')],
+        ['blank', t('filter.blank')],
+        ['archived', t('filter.archived')],
+        ['missing', t('filter.missing')],
+      ].map(([id, label]) => h('button', {
+        key: id,
+        type: 'button',
+        'data-on': filter === id ? 'true' : 'false',
+        'aria-pressed': filter === id,
+        onClick: () => setFilter(id),
+      }, label))
+
+      const listRows = groups.flatMap(group => [
+        h('div', { key: `g-${group.id}`, className: 'dsa-group-label' }, group.label),
+        ...group.rows.map(row => h('div', {
+          key: row.id,
+          className: 'dsa-item-row',
+          'data-selected': selected.has(row.id) ? 'true' : undefined,
+        },
+        h('input', {
+          type: 'checkbox',
+          className: 'dsa-check',
+          checked: selected.has(row.id),
+          'aria-label': row.label,
+          onChange: () => toggleSelected(row.id),
+        }),
+        h('div', { key: 'main', className: 'dsa-item-main' },
+          h('div', { key: 'top', className: 'dsa-item-top' },
+            row.pinned ? h('span', { key: 'pin', className: 'dsa-item-pin', title: t('action.pin') }, h(IconPin, { size: 13 })) : null,
+            h('span', { key: 'title', className: 'dsa-item-title', title: row.cwd }, row.label),
+            row.running && !row.archived ? h(Tag, { key: 'run', tone: 'success' }, t('badge.running')) : null,
+            !row.archived && !row.running && row.blank ? h(Tag, { key: 'blank' }, t('badge.blank')) : null,
+            row.archived ? h(Tag, { key: 'arch', tone: 'muted' }, t('badge.archived')) : null,
+            row.exists === false ? h(Tag, { key: 'miss', tone: 'warn' }, t('badge.missing')) : null,
+          ),
+          h('div', { key: 'meta', className: 'dsa-item-meta' },
+            h('span', { key: 'id', className: 'dsa-item-id' }, shortId(row.id)),
+            h('span', { key: 'sep1', className: 'dsa-item-sep', 'aria-hidden': 'true' }, '·'),
+            h('span', { key: 'size' }, row.folder === undefined ? t('misc.none') : formatBytes(row.folder.bytes)),
+            h('span', { key: 'sep2', className: 'dsa-item-sep', 'aria-hidden': 'true' }, '·'),
+            h('span', { key: 'time', title: new Date(row.updatedAt).toLocaleString() }, relativeTime(row.updatedAt, t)),
+          ),
+        ),
+        h('span', { key: 'actions', className: 'dsa-item-actions' },
+          h('button', {
+            type: 'button',
+            className: 'dsa-icon-btn',
+            'aria-label': `${t('action.more')}: ${row.label}`,
+            onClick: (event) => {
+              const element = event.currentTarget
+              setMenuFor(current => (current !== null && current.row.id === row.id ? null : { row, anchor: element }))
+            },
+          }, h(IconMore, { size: 16 })),
+        ),
+        )),
+      ])
+
       const managerCard = h(Card, {
         key: 'manager',
         title: t('manage.title'),
@@ -2361,7 +2581,7 @@ window.__ModuleLoader__.load({
           total: rows.length,
           size: formatBytes(totalBytes),
           blank: blankCount === 0 ? '' : t('manage.countBlank', { n: blankCount }),
-          missing: visible.missing === 0 ? '' : t('manage.countMissing', { n: visible.missing }),
+          missing: missingCount === 0 ? '' : t('manage.countMissing', { n: missingCount }),
         }),
         actions: h('div', { className: 'dsa-row', style: { flexWrap: 'nowrap' } },
           inventory === null ? null : h('span', { className: 'dsa-note' }, relativeTime(state.inventoryAt, t)),
@@ -2369,6 +2589,7 @@ window.__ModuleLoader__.load({
             type: 'button',
             className: 'dsa-btn',
             'data-size': 'sm',
+            disabled: state.inventoryError !== null,
             onClick: () => { void refreshStatus(); void refreshInventory(true) },
           }, h(IconRefresh, { size: 14 }), t('manage.refresh')),
         ),
@@ -2388,125 +2609,81 @@ window.__ModuleLoader__.load({
         h('label', { className: 'dsa-search' },
           h(IconSearch, { size: 14 }),
           h('input', {
+            type: 'search',
             value: query,
             placeholder: t('manage.search'),
             onChange: event => setQuery(event.target.value),
             'aria-label': t('manage.search'),
           }),
         ),
-        h('div', { className: 'dsa-segment', role: 'group' }, ...[
-          ['all', t('filter.all')],
-          ['active', t('filter.active')],
-          ['blank', t('filter.blank')],
-          ['archived', t('filter.archived')],
-          ['missing', t('filter.missing')],
-        ].map(([id, label]) => h('button', {
-          key: id,
-          type: 'button',
-          'data-on': filter === id ? 'true' : 'false',
-          'aria-pressed': filter === id,
-          onClick: () => setFilter(id),
-        }, label))),
+        h('div', { className: 'dsa-segment', role: 'group', 'aria-label': t('filter.label') }, ...filterButtons),
         h('select', {
           className: 'dsa-select',
           value: sort,
           onChange: event => setSort(event.target.value),
-          'aria-label': t('sort.updated'),
+          'aria-label': t('sort.label'),
         },
         h('option', { value: 'updated' }, t('sort.updated')),
         h('option', { value: 'title' }, t('sort.title')),
         h('option', { value: 'size' }, t('sort.size')),
         ),
       ),
-      visible.list.length === 0
-        ? h('div', { key: 'empty', className: 'dsa-empty' }, rows.length === 0 ? t('manage.empty') : t('manage.emptyFilter'))
-        : h('div', {
-          key: 'list',
-          className: 'dsa-list',
-          tabIndex: 0,
-          role: 'region',
-          'aria-label': t('manage.title'),
-        },
-          h('div', { key: 'head', className: 'dsa-item-row dsa-list-head', style: { minHeight: '28px' } },
-            h('input', {
-              type: 'checkbox',
-              className: 'dsa-check',
-              checked: allSelected,
-              'aria-label': t('filter.all'),
-              onChange: selectAllVisible,
-            }),
-            h('span', { className: 'dsa-item-title dsa-note' }, t('manage.title')),
-            h('span', { className: 'dsa-item-size dsa-note' }, t('sort.size')),
-            h('span', { className: 'dsa-item-time dsa-note' }, t('sort.updated')),
-          ),
-          ...groups.flatMap(group => [
-            h('div', { key: `g-${group.id}`, className: 'dsa-group-label' }, group.label),
-            ...group.rows.map(row => h('div', {
-              key: row.id,
-              className: 'dsa-item-row',
-              'data-selected': selected.has(row.id) ? 'true' : 'false',
-            },
-            h('input', {
-              type: 'checkbox',
-              className: 'dsa-check',
-              checked: selected.has(row.id),
-              'aria-label': row.title ?? (row.blank ? t('row.new') : row.displayTitle),
-              onChange: () => toggleSelected(row.id),
-            }),
-            h('span', {
-              key: 'folder',
-              style: { display: 'flex', color: 'var(--dsw-alias-label-secondary)' },
-              'aria-hidden': 'true',
-            }, h(IconFolder, { size: 14 })),
-            h('span', { key: 'title', className: 'dsa-item-title', title: row.cwd ?? '' },
-              row.title ?? (row.blank ? t('row.new') : row.displayTitle)),
-            h('span', { key: 'id', className: 'dsa-item-id' }, shortId(row.id)),
-            h('span', { key: 'size', className: 'dsa-item-size' }, row.folder === undefined ? t('misc.none') : formatBytes(row.folder.bytes)),
-            h('span', { key: 'time', className: 'dsa-item-time', title: new Date(row.updatedAt).toLocaleString() }, relativeTime(row.updatedAt, t)),
-            row.archived ? h(Tag, { key: 'arch', tone: 'muted' }, t('badge.archived')) : null,
-            row.exists === false ? h(Tag, { key: 'miss', tone: 'warn' }, t('badge.missing')) : null,
-            row.running && !row.archived ? h(Tag, { key: 'run', tone: 'success' }, t('badge.running')) : null,
-            !row.archived && !row.running && row.blank ? h(Tag, { key: 'blank' }, t('badge.blank')) : null,
-            h('span', { key: 'actions', className: 'dsa-item-actions' },
-              h('button', {
-                type: 'button',
-                className: 'dsa-icon-btn',
-                'aria-label': t('action.more'),
-                onClick: (event) => {
-                  const element = event.currentTarget
-                  setMenuFor(current => (current !== null && current.row.id === row.id ? null : { row, anchor: element }))
-                },
-              }, h(IconMore, { size: 16 })),
+      rows.length === 0
+        ? h('div', { key: 'empty', className: 'dsa-empty' }, t('manage.empty'))
+        : h('div', { key: 'list', className: 'dsa-list', role: 'region', 'aria-label': t('manage.title') },
+          h('div', { key: 'selectAll', className: 'dsa-list-tools' },
+            h('label', { className: 'dsa-check-all' },
+              h('input', {
+                type: 'checkbox',
+                className: 'dsa-check',
+                checked: allSelected,
+                ref: (element) => { if (element !== null) element.indeterminate = partialSelected },
+                onChange: selectAllVisible,
+                'aria-label': t('bulk.selectAll'),
+              }),
+              h('span', null, t('bulk.selectAll')),
             ),
-            )),
-          ]),
+            visible.length === rows.length
+              ? null
+              : h('span', { className: 'dsa-note' }, `${visible.length} / ${rows.length}`),
+          ),
+          visible.length === 0
+            ? h('div', { key: 'emptyFilter', className: 'dsa-empty' }, t('manage.emptyFilter'))
+            : listRows,
         ),
       selectedIds.length === 0
         ? null
         : h('div', { key: 'bulk', className: 'dsa-bulk' },
-          h('span', { className: 'dsa-grow' }, t('bulk.selected', { n: selectedIds.length })),
+          h('span', { className: 'dsa-grow' },
+            t('bulk.selected', { n: selectedIds.length }),
+            selectedIds.length >= MAX_BULK ? ` · ${t('bulk.limitShort', { n: MAX_BULK })}` : '',
+          ),
           h('button', {
             type: 'button',
             className: 'dsa-btn',
             'data-size': 'sm',
-            disabled: busyAction || state.saving,
-            onClick: () => { void runBulk(selectedIds, 'archive') },
-          }, t('bulk.archive')),
+            disabled: busyAction || state.saving || bulkTargets.archive.length === 0,
+            onClick: () => {
+              if (bulkTargets.running > 0) setDialog({ kind: 'bulkArchiveRunning', ids: bulkTargets.archive })
+              else void runBulk(bulkTargets.archive, 'archive')
+            },
+          }, `${t('bulk.archive')} (${bulkTargets.archive.length})`),
           h('button', {
             type: 'button',
             className: 'dsa-btn',
             'data-size': 'sm',
-            disabled: busyAction || state.saving,
-            onClick: () => { void runBulk(selectedIds, 'unarchive') },
-          }, t('bulk.unarchive')),
+            disabled: busyAction || state.saving || bulkTargets.unarchive.length === 0,
+            onClick: () => { void runBulk(bulkTargets.unarchive, 'unarchive') },
+          }, `${t('bulk.unarchive')} (${bulkTargets.unarchive.length})`),
           h('button', {
             type: 'button',
             className: 'dsa-btn',
             'data-size': 'sm',
             'data-tone': 'danger',
-            disabled: busyAction || state.saving,
-            onClick: () => setDialog({ kind: 'bulkTrash', ids: selectedIds }),
-          }, t('bulk.trash')),
+            disabled: busyAction || state.saving || !trashAvailable || bulkTargets.trash.length === 0,
+            title: trashAvailable ? undefined : t('trash.unavailable'),
+            onClick: () => setDialog({ kind: 'bulkTrash', ids: bulkTargets.trash }),
+          }, `${t('bulk.trash')} (${bulkTargets.trash.length})`),
           h('button', {
             type: 'button',
             className: 'dsa-btn',
@@ -2550,10 +2727,12 @@ window.__ModuleLoader__.load({
             },
           }, t('maintain.rebuild'), h('span', { className: 'dsa-note' }, `(${missingIds.length})`)),
         ),
-        h('div', { key: 'help', className: 'dsa-note', style: { marginTop: '6px' } },
-          reclaimIds.length === 0 ? t('maintain.reclaim.empty') : t('maintain.reclaim.desc'),
+        h('div', { key: 'help', className: 'dsa-notes' },
+          h('div', { key: 'reclaim' }, reclaimIds.length === 0 ? t('maintain.reclaim.empty') : t('maintain.reclaim.desc')),
+          h('div', { key: 'orphans' }, orphans.length === 0 ? t('maintain.orphans.empty') : t('maintain.orphans.desc')),
+          h('div', { key: 'rebuild' }, missingIds.length === 0 ? t('maintain.rebuild.empty') : t('maintain.rebuild.desc')),
         ),
-        maintenanceNote === null ? null : h('div', { key: 'note', className: 'dsa-note', style: { marginTop: '4px' } }, maintenanceNote),
+        maintenanceNote === null ? null : h('div', { key: 'note', className: 'dsa-note', style: { marginTop: '6px' } }, maintenanceNote),
       ),
       h('details', { key: 'status', className: 'dsa-details' },
         h('summary', null, t('status.title')),
@@ -2582,49 +2761,65 @@ window.__ModuleLoader__.load({
       )
 
       const dialogKind = dialog === null ? null : dialog.kind
+      const dialogRunning = dialogKind === 'trashRunning' || (dialogKind === 'bulkTrash'
+        && dialog.ids.some(id => rows.find(row => row.id === id)?.running === true))
+      const dialogBody = dialogKind === 'rename'
+        ? undefined
+        : dialogKind === 'trash'
+          ? t('confirm.trash.named', { name: dialog.row.label })
+          : dialogKind === 'trashRunning'
+            ? t('confirm.trashRunning.body')
+            : dialogKind === 'bulkTrash'
+              ? (dialogRunning ? t('confirm.bulkTrashRunning.body') : t('confirm.bulkTrash.body'))
+              : dialogKind === 'archiveRunning'
+                ? t('confirm.archiveRunning.body')
+                : dialogKind === 'bulkArchiveRunning'
+                  ? t('confirm.bulkArchiveRunning.body')
+                  : dialogKind === 'reclaim'
+                  ? t('confirm.reclaim.body')
+                  : dialogKind === 'orphans'
+                    ? t('confirm.orphans.body')
+                    : undefined
       const dialogElement = dialog === null ? null : h(Dialog, {
         key: 'dialog',
         title: dialogKind === 'rename'
           ? t('confirm.rename.title')
           : dialogKind === 'trash'
             ? t('confirm.trash.title')
-            : dialogKind === 'bulkTrash'
-              ? t('confirm.bulkTrash.title', { n: dialog.ids.length })
-              : dialogKind === 'archiveRunning'
-                ? t('confirm.archiveRunning.title')
-                : dialogKind === 'reclaim'
-                  ? t('confirm.reclaim.title')
-                  : dialogKind === 'orphans'
-                    ? t('confirm.orphans.title')
-                    : t('dialog.close'),
-        body: dialogKind === 'rename'
-          ? undefined
-          : dialogKind === 'trash'
-            ? t('confirm.trash.named', { name: labelOf(dialog.row) })
-            : dialogKind === 'bulkTrash'
-              ? t('confirm.bulkTrash.body')
-              : dialogKind === 'archiveRunning'
-                ? t('confirm.archiveRunning.body')
-                : dialogKind === 'reclaim'
-                  ? t('confirm.reclaim.body')
-                  : dialogKind === 'orphans'
-                    ? t('confirm.orphans.body')
-                    : undefined,
+            : dialogKind === 'trashRunning'
+              ? t('confirm.trashRunning.title')
+              : dialogKind === 'bulkTrash'
+                ? t('confirm.bulkTrash.title', { n: dialog.ids.length })
+                : dialogKind === 'archiveRunning'
+                  ? t('confirm.archiveRunning.title')
+                  : dialogKind === 'bulkArchiveRunning'
+                    ? t('confirm.bulkArchiveRunning.title')
+                    : dialogKind === 'reclaim'
+                    ? t('confirm.reclaim.title')
+                    : dialogKind === 'orphans'
+                      ? t('confirm.orphans.title')
+                      : t('dialog.close'),
+        body: dialogBody,
         confirmLabel: dialogKind === 'rename'
           ? t('confirm.rename.save')
-          : dialogKind === 'trash' || dialogKind === 'bulkTrash'
+          : dialogKind === 'trash'
             ? t('confirm.trash.confirm')
-            : dialogKind === 'archiveRunning'
-              ? t('confirm.archiveRunning.confirm')
-              : dialogKind === 'reclaim'
-                ? t('confirm.reclaim.confirm')
-                : dialogKind === 'orphans'
-                  ? t('confirm.orphans.confirm')
-                  : t('confirm.continue'),
-        tone: dialogKind === 'trash' || dialogKind === 'bulkTrash' || dialogKind === 'orphans' || dialogKind === 'archiveRunning'
+            : dialogKind === 'trashRunning'
+              ? t('confirm.trashRunning.confirm')
+              : dialogKind === 'bulkTrash'
+                ? t('confirm.trash.confirm')
+                : dialogKind === 'archiveRunning' || dialogKind === 'bulkArchiveRunning'
+                  ? t('confirm.archiveRunning.confirm')
+                  : dialogKind === 'reclaim'
+                    ? t('confirm.reclaim.confirm')
+                    : dialogKind === 'orphans'
+                      ? t('confirm.orphans.confirm')
+                      : t('confirm.continue'),
+        tone: dialogKind === 'trash' || dialogKind === 'trashRunning' || dialogKind === 'bulkTrash' || dialogKind === 'orphans' || dialogKind === 'archiveRunning' || dialogKind === 'bulkArchiveRunning'
           ? 'danger'
           : 'primary',
         busy: dialogBusy,
+        confirmDisabled: dialogKind === 'rename' && String(dialog.value ?? '').trim() === '',
         onCancel: () => setDialog(null),
         onConfirm: () => { void runDialog() },
       },
@@ -2633,6 +2828,7 @@ window.__ModuleLoader__.load({
           key: 'rename',
           className: 'dsa-input',
           value: dialog.value ?? '',
+          maxLength: 200,
           'aria-label': t('confirm.rename.title'),
           onChange: event => setDialog(current => (current === null ? null : { ...current, value: event.target.value })),
           onKeyDown: (event) => { if (event.key === 'Enter') { event.preventDefault(); void runDialog() } },
@@ -2645,7 +2841,7 @@ window.__ModuleLoader__.load({
         pathCard,
         featuresCard,
         configErrorLine,
-        config?.management === false ? null : managerCard,
+        config?.management === false || !managerAvailable ? null : managerCard,
         state.toast === null ? null : h('div', { key: 'toast', className: 'dsa-toast', role: 'status', 'aria-live': 'polite' }, state.toast.message),
         dialogElement,
         menuFor === null ? null : h(RowMenu, {
@@ -2653,12 +2849,12 @@ window.__ModuleLoader__.load({
           anchor: menuFor.anchor,
           row: menuFor.row,
           t,
+          trashAvailable,
           onClose: () => setMenuFor(null),
-          onSelect: (action) => { void onRowAction(menuFor.row, action) },
+          onSelect: (action) => { void runRowAction(menuFor.row, action) },
         }),
       )
     }
-
     /**
      * Debounce one value.
      * @param value - current value.
@@ -2728,7 +2924,7 @@ window.__ModuleLoader__.load({
         // tables above keep rendering the same text.
       }
 
-      const handles = { picker: null, page: null }
+      const handles = { picker: null, section: null }
       const watched = new Map()
 
       /**
@@ -2896,11 +3092,16 @@ window.__ModuleLoader__.load({
       RUNTIME.rememberPick = rememberPick
       RUNTIME.t = makeT(ctx.locale.getSnapshot().active)
       RUNTIME.reveal = async (sessionId) => { await request('/reveal', { sessionId }) }
-      RUNTIME.op = async (sessionId, op, title) => {
-        const value = await request('/session-op', { sessionId, op, ...(title === undefined ? {} : { title }) })
-        return value
-      }
-      RUNTIME.trash = async (sessionId) => request('/trash', { sessionId })
+      RUNTIME.op = async (sessionId, op, title, options) => request('/session-op', {
+        sessionId,
+        op,
+        ...(title === undefined ? {} : { title }),
+        ...(options?.stop === true ? { stop: true } : {}),
+      })
+      RUNTIME.trash = async (sessionId, options) => request('/trash', {
+        sessionId,
+        ...(options?.stop === true ? { stop: true } : {}),
+      })
       RUNTIME.maintain = async (op, ids) => request('/maintenance', { op, ids })
 
       RUNTIME.dispose = () => {
@@ -2919,11 +3120,15 @@ window.__ModuleLoader__.load({
         RUNTIME.t = makeT(ctx.locale.getSnapshot().active)
       }), 'session-autospace: locale binding')
 
-      // The bundle page renders this entry whenever the package page opens.
-      handles.page = ctx.slots.inject('plugins.bundle.config', () => ctx.slots.register({
-        name: 'plugins.bundle.config',
-        key: PACKAGE_NAME,
-      }, ConfigEntry))
+      // Settings owns the panel: this section becomes its own navigation row,
+      // mounted only while selected, and receives `close` for flows that leave
+      // Settings (opening a conversation).
+      handles.section = ctx.slots.inject('settings.section', () => ctx.slots.register({
+        name: 'settings.section',
+        id: 'session-autospace',
+        order: 17,
+        label: () => RUNTIME.t('section.nav'),
+      }, SettingsSection))
 
       syncSlots()
 

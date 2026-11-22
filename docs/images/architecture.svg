@@ -37,7 +37,7 @@
 
   <rect x="96" y="328" width="368" height="52" rx="10" fill="#F7F8FC"/>
   <text x="114" y="351" fill="#2A3040" font-size="18" font-weight="600">Settings page</text>
-  <text x="114" y="370" fill="#8A92A6" font-size="14" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">plugins.bundle.config</text>
+  <text x="114" y="370" fill="#8A92A6" font-size="14" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">settings.section</text>
 
   <rect x="96" y="388" width="368" height="52" rx="10" fill="#F7F8FC"/>
   <text x="114" y="411" fill="#2A3040" font-size="18" font-weight="600">New Session default</text>

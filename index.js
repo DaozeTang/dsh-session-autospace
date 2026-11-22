@@ -24,7 +24,7 @@ import { constants as FS_CONSTANTS } from 'node:fs'
 import { access, lstat, mkdir, readdir, readFile, realpath, rename, rmdir, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { randomUUID } from 'node:crypto'
-import { basename, dirname, isAbsolute, join } from 'node:path'
+import { basename, dirname, isAbsolute, join, relative } from 'node:path'
 import { homedir } from 'node:os'
 
 /** URL prefix shared by every route this plugin serves. */
@@ -51,6 +51,12 @@ const PREPARE_IDEMPOTENCY_MS = 30_000
 
 /** `/inventory` cache lifetime. */
 const INVENTORY_TTL_MS = 10_000
+
+/** A folder younger than this may still be waiting for its session; never treat it as an orphan. */
+const ORPHAN_GRACE_MS = 15_000
+
+/** Activating the plugin must not settle a conversation prepared in the same moment. */
+const SWEEP_GRACE_MS = 10_000
 
 /** The last new-conversation choice this plugin remembers. */
 const PICK_KINDS = ['scratch', 'workspace']
@@ -436,6 +442,7 @@ export function apply(ctx, rawConfig) {
   /** sessionId -> { workspaceId, path, createdAt, locale, attempts } */
   const staged = new Map()
   const recentPrepares = new Map()
+  const inflightPrepares = new Map()
   let inventoryCache
   let sweepReport = null
   /** Serialize prepare per working path: one click chain at a time. */
@@ -531,6 +538,30 @@ export function apply(ctx, rawConfig) {
   }
 
   /**
+   * Load one session that must live directly in the current working path.
+   * Session and folder are bound here, before any management route acts, so a
+   * browser-supplied id can never address another workspace's conversation.
+   * @param sessionId - candidate id.
+   * @returns the summary, root, and folder path.
+   */
+  function assertScratch(summary, root, sessionId) {
+    if (summary === undefined) throw fail('SESSION_MISSING', 'The session no longer exists')
+    if (typeof summary.cwd !== 'string' || summary.cwd !== join(root, sessionId)) {
+      throw fail('NOT_SCRATCH', 'The session does not live in the working path')
+    }
+    return summary
+  }
+
+  async function scratchSession(sessionId) {
+    const id = String(sessionId)
+    if (!SESSION_ID_PATTERN.test(id)) throw fail('BAD_REQUEST', 'not a session id')
+    const root = await ensureRoot(config)
+    const map = await summaries()
+    const summary = assertScratch(map.get(id), root, id)
+    return { summary, root, path: join(root, id) }
+  }
+
+  /**
    * Delete one temporary workspace registration, retrying the transient failures.
    * @param workspaceId - registration id.
    * @returns true when the registration is gone.
@@ -573,11 +604,14 @@ export function apply(ctx, rawConfig) {
    * @param options - `trash: false` keeps the folder.
    * @returns what happened.
    */
-  async function abandon(sessionId, options = {}) {
+  async function abandon(sessionId, options = {}, preload) {
     const entry = staged.get(sessionId)
     if (entry === undefined) return { abandoned: false, noop: true }
-    const map = await summaries()
-    const summary = map.get(sessionId)
+    let summary = preload?.summary
+    if (summary === undefined) {
+      const map = await summaries()
+      summary = map.get(sessionId)
+    }
     if (summary !== undefined && summary.blank !== true) {
       await settle(sessionId)
       return { abandoned: false, settled: true }
@@ -591,9 +625,15 @@ export function apply(ctx, rawConfig) {
         throw fail('ARCHIVE_FAILED', messageOf(error))
       }
     }
-    await deleteWorkspace(entry.workspaceId).catch((error) => {
-      log.warn?.(`workspace cleanup failed for ${sessionId}: ${messageOf(error)}`)
-    })
+    try {
+      await deleteWorkspace(entry.workspaceId)
+    } catch (error) {
+      // Keeping the entry is what makes the cleanup retryable: the next
+      // activation sweep sees a staged conversation whose registration is
+      // still there, instead of a sidebar group nothing can remove.
+      entry.attempts += 1
+      throw fail('SETTLE_FAILED', messageOf(error))
+    }
     staged.delete(sessionId)
     let trashed = false
     let trashError
@@ -605,6 +645,7 @@ export function apply(ctx, rawConfig) {
         trashError = messageOf(error)
       }
     }
+    inventoryCache = undefined
     return { abandoned: true, trashed, ...(trashError === undefined ? {} : { trashError }) }
   }
 
@@ -614,11 +655,37 @@ export function apply(ctx, rawConfig) {
    */
   async function reusableEntry() {
     if (!config.reuseBlank || staged.size === 0) return undefined
+    const wr = ctx.get('workspaceRegistry')
+    if (wr === undefined) return undefined
+    const archived = new Set((wr.archivedSessionIds ?? []).map(String))
     const map = await summaries()
-    const candidates = [...staged.entries()].filter(([sessionId]) => map.get(sessionId)?.blank === true)
+    let root
+    try {
+      root = await ensureRoot(config)
+    } catch {
+      return undefined
+    }
+    const candidates = []
+    for (const [sessionId, entry] of staged) {
+      if (archived.has(String(sessionId))) continue
+      const summary = map.get(String(sessionId))
+      // DSH's own reuse rule excludes archived conversations; a running one or
+      // one whose folder is gone must not be handed back as a fresh start.
+      if (summary === undefined || summary.blank !== true || summary.running === true) continue
+      if (typeof summary.cwd !== 'string' || summary.cwd !== join(root, String(sessionId))) continue
+      try {
+        const info = await lstat(summary.cwd)
+        if (info.isSymbolicLink() || !info.isDirectory()) continue
+      } catch {
+        continue
+      }
+      candidates.push([sessionId, entry])
+    }
     if (candidates.length === 0) return undefined
     candidates.sort((a, b) => b[1].createdAt - a[1].createdAt)
     const [sessionId, entry] = candidates[0]
+    // Reopening counts as using it: restart the reclaim clock for this run.
+    entry.createdAt = Date.now()
     return { sessionId, workspaceId: entry.workspaceId, path: entry.path }
   }
 
@@ -648,6 +715,13 @@ export function apply(ctx, rawConfig) {
         workspace = await wr.create(path, title)
         const created = await sc.create({ sessionId, workspaceId: workspace.id })
         const settledId = String(created.sessionId)
+        // The folder is named after the requested id; a service that mints a
+        // different one would leave that folder unaddressable, so refuse here
+        // and let the retry allocate a fresh pair instead.
+        if (settledId !== sessionId) {
+          await wr.archiveSession(settledId, { stopActivity: true }).catch(() => {})
+          throw fail('SESSION_CONFLICT', 'The Session service did not accept the requested id')
+        }
         staged.set(settledId, {
           workspaceId: String(workspace.id),
           path,
@@ -718,6 +792,12 @@ export function apply(ctx, rawConfig) {
     const cutoff = config.autoReclaimHours > 0 ? Date.now() - config.autoReclaimHours * 3_600_000 : -Infinity
     const report = { at: Date.now(), settled: 0, abandoned: 0, kept: 0 }
     for (const [sessionId, entry] of [...staged.entries()]) {
+      // A conversation prepared while this sweep was reading the session list
+      // is not a leftover; leave it to its own settle/abandon channels.
+      if (Date.now() - entry.createdAt < SWEEP_GRACE_MS) {
+        report.kept += 1
+        continue
+      }
       const summary = map.get(sessionId)
       if (summary === undefined || summary.blank !== true) {
         try {
@@ -728,7 +808,10 @@ export function apply(ctx, rawConfig) {
         }
         continue
       }
-      if (config.autoReclaimHours > 0 && entry.createdAt < cutoff) {
+      // Reusing a blank conversation restarts the entry clock; a session's own
+      // updatedAt can be older than that, so take the later of the two.
+      const touchedAt = Math.max(Number(summary.updatedAt) || 0, entry.createdAt)
+      if (config.autoReclaimHours > 0 && touchedAt < cutoff) {
         try {
           await abandon(sessionId)
           report.abandoned += 1
@@ -786,8 +869,12 @@ export function apply(ctx, rawConfig) {
     // theirs still need a row, or the missing-folder filter could never match.
     for (const summary of known.values()) {
       const cwd = typeof summary.cwd === 'string' ? summary.cwd : ''
-      const id = cwd === '' ? '' : basename(cwd)
-      if (id === '' || !SESSION_ID_PATTERN.test(id) || listed.has(id)) continue
+      // A conversation left in an earlier working path is not a missing folder
+      // of this one: its directory still exists, just elsewhere, and rebuilding
+      // it here would create a folder its immutable cwd can never use.
+      if (cwd === '' || dirname(cwd) !== root) continue
+      const id = basename(cwd)
+      if (!SESSION_ID_PATTERN.test(id) || listed.has(id)) continue
       folders.push({ id, exists: false, bytes: 0, files: 0, mtimeMs: 0 })
       listed.add(id)
     }
@@ -829,22 +916,19 @@ export function apply(ctx, rawConfig) {
    * @param sessionId - session id whose folder is deleted.
    * @returns what happened, including a Trash failure the browser reports.
    */
-  async function deleteScratch(sessionId) {
-    const path = await scratchPath(sessionId)
-    const map = await summaries()
-    const summary = map.get(sessionId)
-    if (summary !== undefined && summary.running === true) {
+  async function deleteScratch(sessionId, options = {}) {
+    const { summary, path } = await scratchSession(sessionId)
+    const wr = ctx.get('workspaceRegistry')
+    if (wr === undefined) throw fail('HOST_UNAVAILABLE', 'The workspace registry is unavailable')
+    if (summary.running === true && options.stop !== true) {
       throw fail('SESSION_RUNNING', 'This conversation is still running')
     }
-    const wr = ctx.get('workspaceRegistry')
     let archived = false
-    if (wr !== undefined && summary !== undefined) {
-      try {
-        await wr.archiveSession(sessionId, { stopActivity: true })
-        archived = true
-      } catch (error) {
-        throw fail('ARCHIVE_FAILED', messageOf(error))
-      }
+    try {
+      await wr.archiveSession(sessionId, { stopActivity: true })
+      archived = true
+    } catch (error) {
+      throw fail('ARCHIVE_FAILED', messageOf(error))
     }
     const entry = staged.get(sessionId)
     if (entry !== undefined) {
@@ -852,6 +936,18 @@ export function apply(ctx, rawConfig) {
       staged.delete(sessionId)
     }
     inventoryCache = undefined
+    // A retry after the folder already moved must reach the same end state,
+    // not fail with FOLDER_MISSING.
+    let info
+    try {
+      info = await lstat(path)
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw fail('FOLDER_MISSING', messageOf(error))
+      return { archived, trashed: false, alreadyGone: true }
+    }
+    if (info.isSymbolicLink() || !info.isDirectory()) {
+      throw fail('SYMLINK_REJECTED', 'The path is not a folder')
+    }
     if (!config.trashOnDelete) return { archived, trashed: false, kept: true }
     try {
       const method = await trashPath(path)
@@ -883,15 +979,39 @@ export function apply(ctx, rawConfig) {
       // Missing: writability is decided by the nearest existing ancestor.
     }
     let writable = false
-    let ancestor = exists ? resolved : dirname(resolved)
-    let nearestExisting = exists ? resolved : null
-    for (let depth = 0; depth < 40; depth += 1) {
+    let nearestExisting = null
+    if (exists) {
+      // An existing directory is judged on its own permissions: a writable
+      // parent does not make it writable.
+      nearestExisting = resolved
       try {
-        await access(ancestor, FS_CONSTANTS.W_OK | FS_CONSTANTS.X_OK)
+        await access(resolved, FS_CONSTANTS.W_OK | FS_CONSTANTS.X_OK)
         writable = true
-        if (nearestExisting === null) nearestExisting = ancestor
-        break
       } catch {
+        writable = false
+      }
+    } else {
+      // A missing path is judged by its nearest existing ancestor, which must
+      // itself be a directory.
+      let ancestor = dirname(resolved)
+      for (let depth = 0; depth < 40; depth += 1) {
+        let info
+        try {
+          info = await lstat(ancestor)
+        } catch {
+          info = undefined
+        }
+        if (info !== undefined) {
+          nearestExisting = ancestor
+          if (!info.isDirectory()) break
+          try {
+            await access(ancestor, FS_CONSTANTS.W_OK | FS_CONSTANTS.X_OK)
+            writable = true
+          } catch {
+            writable = false
+          }
+          break
+        }
         const parent = dirname(ancestor)
         if (parent === ancestor) break
         ancestor = parent
@@ -916,13 +1036,11 @@ export function apply(ctx, rawConfig) {
   async function sessionOperation(request) {
     const sessionId = String(request.sessionId ?? '')
     const op = String(request.op ?? '')
-    if (!SESSION_ID_PATTERN.test(sessionId)) throw fail('BAD_REQUEST', 'not a session id')
     const sc = ctx.get('sessionController')
     const wr = ctx.get('workspaceRegistry')
     if (sc === undefined || wr === undefined) throw fail('HOST_UNAVAILABLE', 'Session services unavailable')
-    const map = await summaries()
-    const summary = map.get(sessionId)
-    if (summary === undefined) throw fail('SESSION_MISSING', 'The session no longer exists')
+    const { summary } = await scratchSession(sessionId)
+    const archived = (wr.archivedSessionIds ?? []).map(String).includes(sessionId)
     switch (op) {
       case 'rename': {
         const title = String(request.title ?? '').trim()
@@ -931,6 +1049,7 @@ export function apply(ctx, rawConfig) {
         return { ok: true }
       }
       case 'pin':
+        if (archived) throw fail('SESSION_ARCHIVED', 'Unarchive the conversation before pinning it')
         await wr.pinSession(sessionId)
         return { ok: true }
       case 'unpin':
@@ -939,6 +1058,9 @@ export function apply(ctx, rawConfig) {
       case 'archive': {
         // `stopActivity` is the documented stop-and-archive verb; the browser
         // asks before using it on a running turn.
+        if (summary.running === true && request.stop !== true) {
+          throw fail('SESSION_RUNNING', 'This conversation is still running')
+        }
         try {
           await wr.archiveSession(sessionId, { stopActivity: true })
         } catch (error) {
@@ -961,14 +1083,27 @@ export function apply(ctx, rawConfig) {
    */
   async function maintenance(request) {
     const op = String(request.op ?? '')
-    const ids = Array.isArray(request.ids) ? request.ids.map(String).slice(0, 100) : []
+    const raw = Array.isArray(request.ids) ? request.ids.map(String) : []
+    const ids = raw.slice(0, 100)
+    // Everything the request named but cannot act on is reported, never
+    // silently dropped.
     const changed = []
-    const skipped = []
+    const skipped = raw.slice(100)
     if (op === 'reclaimBlank') {
+      // One list read for the whole batch: reclaim can address up to 100
+      // conversations, and each one must still be validated against this root.
+      const root = await ensureRoot(config)
+      const known = await summaries()
       for (const sessionId of ids) {
-        if (!SESSION_ID_PATTERN.test(sessionId)) continue
         try {
-          const result = staged.has(sessionId) ? await abandon(sessionId) : await abandonDetached(sessionId)
+          const preload = {
+            summary: assertScratch(known.get(sessionId), root, sessionId),
+            root,
+            path: join(root, sessionId),
+          }
+          const result = staged.has(sessionId)
+            ? await abandon(sessionId, {}, preload)
+            : await abandonDetached(sessionId, preload)
           if (result.abandoned || result.settled) changed.push(sessionId)
           else skipped.push(sessionId)
         } catch (error) {
@@ -976,13 +1111,29 @@ export function apply(ctx, rawConfig) {
           skipped.push(sessionId)
         }
       }
+      inventoryCache = undefined
       return { changed, skipped }
     }
     if (op === 'orphans') {
+      // Re-read the session list immediately before deleting: a folder that
+      // gained a conversation since the inventory was cached is not an orphan.
+      const known = await summaries()
       for (const sessionId of ids) {
-        if (!SESSION_ID_PATTERN.test(sessionId)) continue
+        if (!SESSION_ID_PATTERN.test(sessionId)) {
+          skipped.push(sessionId)
+          continue
+        }
+        if (known.has(sessionId)) {
+          skipped.push(sessionId)
+          continue
+        }
         try {
           const path = await scratchPath(sessionId)
+          const info = await lstat(path)
+          if (Date.now() - Number(info.mtimeMs) < ORPHAN_GRACE_MS) {
+            skipped.push(sessionId)
+            continue
+          }
           try {
             await trashPath(path)
           } catch (error) {
@@ -1000,8 +1151,19 @@ export function apply(ctx, rawConfig) {
     }
     if (op === 'rebuildMissing') {
       const root = await ensureRoot(config)
+      const known = await summaries()
       for (const sessionId of ids) {
-        if (!SESSION_ID_PATTERN.test(sessionId)) continue
+        if (!SESSION_ID_PATTERN.test(sessionId)) {
+          skipped.push(sessionId)
+          continue
+        }
+        // Only rebuild the folder of a known conversation whose immutable cwd
+        // is exactly this path; anything else would create a folder nobody uses.
+        const summary = known.get(sessionId)
+        if (summary === undefined || summary.cwd !== join(root, sessionId)) {
+          skipped.push(sessionId)
+          continue
+        }
         const path = join(root, sessionId)
         try {
           const info = await lstat(path)
@@ -1009,20 +1171,19 @@ export function apply(ctx, rawConfig) {
             skipped.push(sessionId)
             continue
           }
-          await mkdir(path, { mode: 0o700 })
-          changed.push(sessionId)
+          throw fail('SYMLINK_REJECTED', 'The path is not a folder')
         } catch (error) {
           if (error?.code !== 'ENOENT') {
             skipped.push(sessionId)
             continue
           }
-          try {
-            await mkdir(path, { mode: 0o700 })
-            changed.push(sessionId)
-          } catch (mkdirError) {
-            log.warn?.(`rebuild failed for ${sessionId}: ${messageOf(mkdirError)}`)
-            skipped.push(sessionId)
-          }
+        }
+        try {
+          await mkdir(path, { mode: 0o700 })
+          changed.push(sessionId)
+        } catch (mkdirError) {
+          log.warn?.(`rebuild failed for ${sessionId}: ${messageOf(mkdirError)}`)
+          skipped.push(sessionId)
         }
       }
       inventoryCache = undefined
@@ -1038,29 +1199,23 @@ export function apply(ctx, rawConfig) {
    * @param sessionId - session id.
    * @returns what happened.
    */
-  async function abandonDetached(sessionId) {
-    const map = await summaries()
-    const summary = map.get(sessionId)
-    if (summary === undefined) return { abandoned: false }
+  async function abandonDetached(sessionId, preload) {
+    const { summary, root, path } = preload ?? await scratchSession(sessionId)
     if (summary.blank !== true) return { abandoned: false }
     const wr = ctx.get('workspaceRegistry')
-    if (wr !== undefined) {
-      try {
-        await wr.archiveSession(sessionId, { stopActivity: true })
-      } catch (error) {
-        throw fail('ARCHIVE_FAILED', messageOf(error))
-      }
+    if (wr === undefined) throw fail('HOST_UNAVAILABLE', 'The workspace registry is unavailable')
+    try {
+      await wr.archiveSession(sessionId, { stopActivity: true })
+    } catch (error) {
+      throw fail('ARCHIVE_FAILED', messageOf(error))
     }
-    const root = await ensureRoot(config).catch(() => undefined)
-    if (root !== undefined && wr !== undefined) {
-      for (const workspace of [...wr.list()]) {
-        if (!isScratchPath(String(workspace.path), root)) continue
-        if (!(workspace.sessionIds ?? []).map(String).includes(sessionId)) continue
-        await wr.delete(workspace.id).catch(() => {})
-      }
+    for (const workspace of [...wr.list()]) {
+      if (!isScratchPath(String(workspace.path), root)) continue
+      if (!(workspace.sessionIds ?? []).map(String).includes(sessionId)) continue
+      await wr.delete(workspace.id).catch(() => {})
     }
-    if (root !== undefined && config.trashOnDelete && await isEmptyDir(join(root, sessionId))) {
-      await trashPath(join(root, sessionId)).catch((error) => {
+    if (config.trashOnDelete && await isEmptyDir(path)) {
+      await trashPath(path).catch((error) => {
         log.warn?.(`trash failed for ${sessionId}: ${messageOf(error)}`)
       })
     }
@@ -1147,21 +1302,32 @@ export function apply(ctx, rawConfig) {
         if (requestId !== '') {
           const remembered = recentPrepares.get(requestId)
           if (remembered !== undefined && Date.now() - remembered.at < PREPARE_IDEMPOTENCY_MS) return remembered.value
+          // A double click sends both requests before either finishes; sharing
+          // the in-flight promise keeps one requestId on one conversation.
+          const inflight = inflightPrepares.get(requestId)
+          if (inflight !== undefined) return inflight
         }
-        const value = await serial(async () => {
+        const task = serial(async () => {
           const reusable = await reusableEntry()
-          if (reusable !== undefined) return { ...reusable, reused: true }
-          return createScratch(typeof body.locale === 'string' ? body.locale : 'en')
+          const value = reusable !== undefined
+            ? { ...reusable, reused: true }
+            : await createScratch(typeof body.locale === 'string' ? body.locale : 'en')
+          // Asking for a scratch conversation is itself the choice to remember.
+          await rememberPick('scratch').catch(() => {})
+          return value
         })
-        // Asking for a scratch conversation is itself the choice to remember.
-        await rememberPick('scratch').catch(() => {})
-        if (requestId !== '') {
+        if (requestId === '') return task
+        const shared = task.then((value) => {
           recentPrepares.set(requestId, { at: Date.now(), value })
           for (const [key, record] of recentPrepares) {
             if (Date.now() - record.at >= PREPARE_IDEMPOTENCY_MS) recentPrepares.delete(key)
           }
-        }
-        return value
+          return value
+        }).finally(() => {
+          if (inflightPrepares.get(requestId) === shared) inflightPrepares.delete(requestId)
+        })
+        inflightPrepares.set(requestId, shared)
+        return shared
       },
     },
     {
@@ -1177,7 +1343,7 @@ export function apply(ctx, rawConfig) {
     { path: '/probe', run: async (body) => probePath(body) },
     {
       path: '/trash',
-      run: async (body) => deleteScratch(String(body.sessionId ?? '')),
+      run: async (body) => deleteScratch(String(body.sessionId ?? ''), { stop: body.stop === true }),
     },
     {
       path: '/reveal',
@@ -1198,7 +1364,10 @@ export function apply(ctx, rawConfig) {
             throw fail('FOLDER_MISSING', 'The folder no longer exists')
           }
           const root = await ensureRoot(config)
-          if (real !== root && !real.startsWith(`${root}/`)) throw fail('OUT_OF_ROOT', 'The folder is outside the working path')
+          const inside = relative(root, real)
+          if (inside === '' ? false : (inside.startsWith('..') || isAbsolute(inside))) {
+            throw fail('OUT_OF_ROOT', 'The folder is outside the working path')
+          }
           target = real
         }
         await sc.openWorkspacePath({ path: target, action: 'reveal' }, new AbortController().signal)

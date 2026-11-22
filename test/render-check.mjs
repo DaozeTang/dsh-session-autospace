@@ -20,7 +20,7 @@ const INJECT_MARKER = '    return {\n      inject: [\'slots\', \'locale\', \'ses
 if (!source.includes(INJECT_MARKER)) throw new Error('injection marker not found')
 const instrumented = source.replace(
   INJECT_MARKER,
-  `    globalThis.__DSA__ = { WorkspaceMenu, SettingsPage, ConfigEntry, RowMenu, Dialog, store, RUNTIME }\n${INJECT_MARKER}`,
+  `    globalThis.__DSA__ = { WorkspaceMenu, SettingsSection, SettingsPage, RowMenu, Dialog, store, RUNTIME, rowLabel, rowMatchesQuery }\n${INJECT_MARKER}`,
 )
 
 // --------------------------------------------------------------- React stub ---
@@ -321,7 +321,7 @@ const stubCtx = {
       return () => { if (typeof disposer === 'function') disposer() }
     },
     register: (options, component) => {
-      registered.push({ key: options.name, keyed: options.key, id: options.id, order: options.order, component })
+      registered.push({ key: options.name, keyed: options.key, id: options.id, order: options.order, label: options.label, component })
       return () => {}
     },
   },
@@ -396,9 +396,13 @@ globalThis.fetch = realFetch
 results.push(['New Session default', 'scratch remembered, explicit pick clears it, switch restores DSH'])
 
 const slotsByName = new Map(registered.map(entry => [entry.key, entry]))
-for (const name of ['conversation.hero.workspace', 'plugins.bundle.config']) {
+for (const name of ['conversation.hero.workspace', 'settings.section']) {
   if (!slotsByName.has(name)) throw new Error(`missing slot registration: ${name}`)
 }
+const sectionEntry = slotsByName.get('settings.section')
+if (sectionEntry.id !== 'session-autospace') throw new Error(`unexpected settings section id: ${sectionEntry.id}`)
+if (typeof sectionEntry.label !== 'function') throw new Error('the settings section label must follow the locale')
+if (sectionEntry.label() !== 'Autospace') throw new Error(`unexpected section label: ${sectionEntry.label()}`)
 if (registered.some(entry => entry.key === 'sidebar.session.row.trailing')) {
   throw new Error('the plugin must not register the row-trailing seat')
 }
@@ -463,42 +467,71 @@ const workspaceRows = collectText(menuOpen).filter(text => text === 'demo').leng
 if (workspaceRows !== 2) throw new Error(`expected two workspace rows, saw ${workspaceRows}`)
 results.push(['menu (open)', '2 workspaces + add + scratch'])
 
-const summary = renderSlotEntry('plugins.bundle.config', { view: 'summary' })
-const summaryText = collectText(summary).join('')
-if (!summaryText.includes(ROOT)) throw new Error(`summary is missing the path: ${summaryText}`)
-results.push(['config summary', summaryText])
-
-const page = renderSlotEntry('plugins.bundle.config', { view: 'page' })
-const pageText = collectText(page).join(' | ')
-for (const expected of ['Working path', 'Features', 'Remember the last choice', 'Scratch conversations', 'How the sandbox boundary works', 'Recently updated']) {
-  if (!pageText.includes(expected)) throw new Error(`settings page is missing "${expected}": ${pageText.slice(0, 600)}`)
+const section = renderSlotEntry('settings.section', { close: () => {} })
+const sectionText = collectText(section).join(' | ')
+for (const expected of ['Session autospace', 'Working path', 'Features', 'Remember the last choice', 'Scratch conversations', 'How the sandbox boundary works', 'Recently updated', 'Select all']) {
+  if (!sectionText.includes(expected)) throw new Error(`settings section is missing "${expected}": ${sectionText.slice(0, 600)}`)
 }
-if (pageText.includes('Folder mark on conversation rows')) throw new Error('the removed row badge switch still renders')
-results.push(['config page', 'path + features (6 switches) + manager rows'])
+if (sectionText.includes('Folder mark on conversation rows')) throw new Error('the removed row badge switch still renders')
+results.push(['settings section', 'heading + path + features + manager rows'])
+
+// A row whose session has no title must still render and search, not crash
+// the whole section (the old page read row.title.toLowerCase() directly).
+const untitledRow = { id: 'session-99999999-2222-3333-4444-555555555555', title: undefined, displayTitle: undefined, blank: true, cwd: `${ROOT}/session-99999999-2222-3333-4444-555555555555` }
+if (internal.rowLabel(untitledRow, key => ({ 'row.new': 'New Session', 'row.untitled': 'Untitled conversation' })[key] ?? key) !== 'New Session') {
+  throw new Error('a blank row without a title must fall back to New Session')
+}
+if (!internal.rowMatchesQuery(untitledRow, 'new session', key => ({ 'row.new': 'New Session', 'row.untitled': 'Untitled conversation' })[key] ?? key)) {
+  throw new Error('search must match the fallback label of an untitled row')
+}
+const plainRow = { ...untitledRow, blank: false }
+if (internal.rowLabel(plainRow, key => ({ 'row.untitled': 'Untitled conversation' })[key] ?? key) !== 'Untitled conversation') {
+  throw new Error('an untitled settled row must fall back to Untitled conversation')
+}
+results.push(['untitled row', 'label + search fall back safely'])
 
 internal.store.set({
   status: { ...statusFixture, config: { ...statusFixture.config, management: false } },
 })
-const pageNoManager = renderSlotEntry('plugins.bundle.config', { view: 'page' })
-const noManagerText = collectText(pageNoManager).join(' | ')
+const sectionNoManager = renderSlotEntry('settings.section', { close: () => {} })
+const noManagerText = collectText(sectionNoManager).join(' | ')
 if (noManagerText.includes('Scratch conversations')) throw new Error('the management switch did not hide the manager')
-results.push(['config page (management off)', 'manager hidden'])
+results.push(['settings section (management off)', 'manager hidden'])
+
+// Without the workspace registry the manager's actions could never succeed.
+internal.store.set({
+  status: { ...statusFixture, caps: { ...statusFixture.caps, workspaceRegistry: false } },
+})
+const sectionNoRegistry = renderSlotEntry('settings.section', { close: () => {} })
+const noRegistryText = collectText(sectionNoRegistry).join(' | ')
+if (noRegistryText.includes('Scratch conversations')) throw new Error('the manager must not render without a workspace registry')
+results.push(['settings section (no registry)', 'manager hidden instead of dead buttons'])
+
+// A conversation under another working path is not a scratch row here.
+internal.store.set({ status: statusFixture, inventory: inventoryFixture })
+const realRow = sessionsFixture.byId[SESSION_A]
+realRow.cwd = '/Users/example/other-root/' + SESSION_A
+const sectionOtherRoot = renderSlotEntry('settings.section', { close: () => {} })
+const otherRootText = collectText(sectionOtherRoot).join(' | ')
+if (otherRootText.includes('How the sandbox boundary works')) throw new Error('a conversation from another working path leaked into the manager')
+realRow.cwd = `${ROOT}/${SESSION_A}`
+results.push(['settings section (other root)', 'old-root conversations are not listed'])
 
 internal.store.set({ status: null, statusError: { message: 'offline' } })
-const pageOffline = renderSlotEntry('plugins.bundle.config', { view: 'page' })
+const pageOffline = renderSlotEntry('settings.section', { close: () => {} })
 const offlineText = collectText(pageOffline).join(' | ')
 if (!offlineText.includes('Retry')) throw new Error(`offline page has no retry: ${offlineText}`)
-results.push(['config page (host offline)', 'retry shown'])
+results.push(['settings section (host offline)', 'retry shown'])
 
 // A missing folder must surface the "Folder missing" filter entry and badge.
 internal.store.set({
   status: statusFixture,
   inventory: { root: ROOT, folders: [{ id: SESSION_B, exists: true, bytes: 0, files: 0, mtimeMs: now }], orphans: [] },
 })
-const pageMissing = renderSlotEntry('plugins.bundle.config', { view: 'page' })
-const missingText = collectText(pageMissing).join(' | ')
+const sectionMissing = renderSlotEntry('settings.section', { close: () => {} })
+const missingText = collectText(sectionMissing).join(' | ')
 if (!missingText.includes('Folder missing')) throw new Error('missing-folder state did not render')
-results.push(['config page (folder missing)', 'missing badge shown'])
+results.push(['settings section (folder missing)', 'missing badge shown'])
 
 const rowMenu = renderNode(createElement(internal.RowMenu, {
   anchor,
@@ -561,7 +594,7 @@ internal.store.set({
   status: { ...statusFixture, caps: { ...statusFixture.caps, configEditor: false } },
   configError: { message: 'entry is overridden' },
 })
-const pageReadOnly = renderSlotEntry('plugins.bundle.config', { view: 'page' })
+const pageReadOnly = renderSlotEntry('settings.section', { close: () => {} })
 const readOnlyText = collectText(pageReadOnly).join(' | ')
 if (!readOnlyText.includes('read-only')) throw new Error('read-only profile is not explained')
 if (!readOnlyText.includes('entry is overridden')) throw new Error('the failed write is not reported')
@@ -576,7 +609,7 @@ const walk = (node) => {
 walk(pageReadOnly)
 if (switches.length !== 6) throw new Error(`expected 6 switches, saw ${switches.length}`)
 if (switches.some(node => node.props.disabled !== true)) throw new Error('a switch stayed enabled on a read-only profile')
-results.push(['config page (read-only)', '6 switches disabled, write error shown'])
+results.push(['settings section (read-only)', '6 switches disabled, write error shown'])
 
 // A Host that predates the field hides the row rather than offering a switch
 // whose write would be rejected.
@@ -584,10 +617,10 @@ internal.store.set({
   status: { ...statusFixture, config: { ...statusFixture.config, rememberPick: undefined } },
   configError: null,
 })
-const pageOldHost = renderSlotEntry('plugins.bundle.config', { view: 'page' })
+const pageOldHost = renderSlotEntry('settings.section', { close: () => {} })
 const oldHostSwitches = collectButtons(pageOldHost, 'switch')
 if (oldHostSwitches.length !== 5) throw new Error(`an old Host must hide the new switch, saw ${oldHostSwitches.length}`)
-results.push(['config page (old Host)', 'new switch hidden, no failing write offered'])
+results.push(['settings section (old Host)', 'new switch hidden, no failing write offered'])
 
 // A long session list must scroll inside the card instead of stretching it.
 // The stub renderer has no layout engine, so assert the shipped CSS contract.
@@ -595,9 +628,9 @@ const listRule = source.match(/\.dsa-list \{[^}]*\}/)?.[0] ?? ''
 if (!listRule.includes('max-height') || !listRule.includes('overflow-y: auto')) {
   throw new Error(`the manager list is not a bounded scroll area: ${listRule}`)
 }
-const headRule = source.match(/\.dsa-list-head \{[^}]*\}/)?.[0] ?? ''
-if (!headRule.includes('position: sticky')) throw new Error('the list header does not stay visible while scrolling')
-results.push(['manager list', 'height-capped scroll area with sticky header'])
+const toolsRule = source.match(/\.dsa-list-tools \{[^}]*\}/)?.[0] ?? ''
+if (!toolsRule.includes('position: sticky')) throw new Error('the select-all row does not stay visible while scrolling')
+results.push(['manager list', 'height-capped scroll area with a sticky select-all row'])
 
 console.log(results.map(([name, detail]) => `${name}: ${detail}`).join('\n'))
 console.log(`host elements rendered: ${rendered.host}`)

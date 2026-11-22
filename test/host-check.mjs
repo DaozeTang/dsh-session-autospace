@@ -39,6 +39,7 @@ const pinned = new Set()
 let routeHandlers = new Map()
 let sessionEventListener = null
 let configEditorCalls = []
+const failingWorkspaceDeletes = new Set()
 
 const sessionSummary = (session) => ({
   agentAvailable: true,
@@ -70,7 +71,11 @@ const workspaceRegistry = {
   list() {
     return workspaces
   },
+  get archivedSessionIds() {
+    return [...archived]
+  },
   async delete(id) {
+    if (failingWorkspaceDeletes.has(id)) throw new Error('registry is busy')
     const index = workspaces.findIndex(workspace => workspace.id === id)
     if (index < 0) return false
     workspaces.splice(index, 1)
@@ -320,11 +325,14 @@ await ok('/session-op', { sessionId: prepared.sessionId, op: 'unarchive' })
 assert.ok(!archived.has(prepared.sessionId))
 sessions.get(prepared.sessionId).running = true
 const runningArchive = await call('/session-op', { sessionId: prepared.sessionId, op: 'archive' })
-assert.equal(runningArchive.payload.ok, true, 'a running turn is stopped and archived')
+assert.equal(runningArchive.payload.ok, false, 'an unconfirmed archive must refuse a running turn')
+assert.equal(runningArchive.payload.code, 'SESSION_RUNNING')
+const forcedArchive = await call('/session-op', { sessionId: prepared.sessionId, op: 'archive', stop: true })
+assert.equal(forcedArchive.payload.ok, true, 'the confirmed stop archives the running turn')
 assert.ok(archived.has(prepared.sessionId))
 sessions.get(prepared.sessionId).running = false
 await ok('/session-op', { sessionId: prepared.sessionId, op: 'unarchive' })
-step('session-op', 'rename, pin, archive (stop-and-archive), unarchive')
+step('session-op', 'rename, pin, refuse/confirm stop-and-archive, unarchive')
 
 // delete = archive + Trash (archive only with the switch off)
 const deleteTarget = await ok('/prepare', { requestId: 'r5', locale: 'en' })
@@ -366,6 +374,35 @@ assert.equal(probeRelative.payload.ok, false)
 assert.equal(probeRelative.payload.code, 'ROOT_INVALID')
 step('probe', 'existence, writability, and absolute-path validation')
 
+// a session outside the working path is not this plugin's conversation
+const outsiderId = 'session-33333333-3333-4333-8333-333333333333'
+const outsiderDir = path.join(workdir, 'outside')
+await fsp.mkdir(outsiderDir, { recursive: true })
+sessions.set(outsiderId, { id: outsiderId, cwd: outsiderDir, blank: true, running: false, updatedAt: Date.now() })
+const outsiderRename = await call('/session-op', { sessionId: outsiderId, op: 'rename', title: 'x' })
+assert.equal(outsiderRename.payload.ok, false, 'a foreign session must not be renamed')
+assert.equal(outsiderRename.payload.code, 'NOT_SCRATCH')
+const outsiderReclaim = await ok('/maintenance', { op: 'reclaimBlank', ids: [outsiderId] })
+assert.deepEqual(outsiderReclaim.changed, [])
+assert.ok(outsiderReclaim.skipped.includes(outsiderId), 'a foreign blank session is skipped by reclaim')
+const outsiderRebuild = await ok('/maintenance', { op: 'rebuildMissing', ids: [outsiderId] })
+assert.deepEqual(outsiderRebuild.changed, [])
+assert.ok(outsiderRebuild.skipped.includes(outsiderId), 'a foreign session never gets a folder in this root')
+const outsiderInventory = await ok('/inventory', { fresh: true })
+assert.ok(!outsiderInventory.folders.some(folder => folder.id === outsiderId), 'a foreign session has no folder row')
+sessions.delete(outsiderId)
+step('scratch binding', 'foreign sessions refused by management, inventory, and maintenance')
+
+// an existing read-only directory is not reported writable
+const readOnlyDir = path.join(workdir, 'readonly')
+await fsp.mkdir(readOnlyDir, { recursive: true, mode: 0o500 })
+await fsp.chmod(readOnlyDir, 0o500)
+const probeReadOnly = await ok('/probe', { path: readOnlyDir })
+assert.equal(probeReadOnly.exists, true)
+assert.equal(probeReadOnly.writable, false, 'a read-only directory must not inherit its parent permission')
+await fsp.chmod(readOnlyDir, 0o700)
+step('probe (read-only)', 'existing directory judged on its own permissions')
+
 // a deleted folder is still listed, marked missing
 await fsp.rm(prepared.path, { recursive: true, force: true })
 const inventoryAfter = await ok('/inventory', { fresh: true })
@@ -385,12 +422,12 @@ step('maintenance rebuildMissing', 'folder recreated')
 // trash route validates before it touches anything
 await fsp.rm(prepared.path, { recursive: true, force: true })
 const missingTrash = await call('/trash', { sessionId: prepared.sessionId })
-assert.equal(missingTrash.payload.ok, false)
-assert.equal(missingTrash.payload.code, 'FOLDER_MISSING')
+assert.equal(missingTrash.payload.ok, true, 'deleting an already-gone folder reaches the same end state')
+assert.equal(missingTrash.payload.value.alreadyGone, true)
 const badId = await call('/trash', { sessionId: '../../etc' })
 assert.equal(badId.payload.ok, false)
 assert.equal(badId.payload.code, 'BAD_REQUEST')
-step('trash validation', 'missing folder and traversal refused')
+step('trash validation', 'already-gone folder is idempotent, traversal refused')
 
 const revealedRoot = await ok('/reveal', { path: root })
 assert.equal(revealedRoot.revealed, true)
@@ -400,6 +437,19 @@ const revealedOutside = await call('/reveal', { path: '/etc' })
 assert.equal(revealedOutside.payload.ok, false)
 assert.equal(revealedOutside.payload.code, 'OUT_OF_ROOT')
 step('reveal', 'root and folder revealed, outside path refused')
+
+// a failed registration cleanup keeps the staged entry so the sweep can retry
+const retryTarget = await ok('/prepare', { requestId: 'r6', locale: 'en' })
+failingWorkspaceDeletes.add(retryTarget.workspaceId)
+const failedAbandon = await call('/abandon', { sessionId: retryTarget.sessionId })
+assert.equal(failedAbandon.payload.ok, false, 'a registration that could not be deleted is reported')
+assert.equal(failedAbandon.payload.code, 'SETTLE_FAILED')
+assert.equal((await ok('/status')).staged.length, 1, 'the staged entry survives the failed cleanup')
+failingWorkspaceDeletes.delete(retryTarget.workspaceId)
+const retriedAbandon = await ok('/abandon', { sessionId: retryTarget.sessionId })
+assert.equal(retriedAbandon.abandoned, true)
+assert.equal((await ok('/status')).staged.length, 0)
+step('abandon (retry)', 'a failed registration cleanup is reported and retryable')
 
 // config write goes through the config editor
 const written = await ok('/config', { patch: { pickerEntry: false, autoReclaimHours: 6 } })
@@ -439,7 +489,7 @@ workspaces.push({
 const oldDir = path.join(root, `session-22222222-2222-4222-8222-222222222222`)
 await fsp.mkdir(oldDir, { recursive: true })
 const oldSessionId = path.basename(oldDir)
-sessions.set(oldSessionId, { id: oldSessionId, cwd: oldDir, blank: true, running: false, updatedAt: Date.now() })
+sessions.set(oldSessionId, { id: oldSessionId, cwd: oldDir, blank: true, running: false, updatedAt: Date.now() - 72 * 3600_000 })
 workspaces.push({
   id: 'ws-old', path: oldDir, title: 'No workspace', createdAt: new Date(Date.now() - 72 * 3600_000).toISOString(), updatedAt: new Date().toISOString(), sessionIds: [oldSessionId],
 })
@@ -451,6 +501,40 @@ assert.ok(archived.has(oldSessionId), 'the expired blank conversation was archiv
 step('activation sweep', 'stale registration removed, expired blank reclaimed')
 assert.equal((await ok('/status')).lastPick, 'scratch', 'the remembered choice survives a restart')
 step('memory (restart)', 'last choice reloaded from DSH_HOME')
+
+// a fresh instance: reuse and request-id idempotency stay honest
+routeHandlers = new Map()
+workspaces.length = 0
+sessions.clear()
+archived.clear()
+pinned.clear()
+const reuseRoot = path.join(workdir, 'reuse-root')
+await fsp.mkdir(reuseRoot, { recursive: true })
+currentConfig = normalizeConfig({ workspaceRoot: reuseRoot, trashOnDelete: false, autoReclaimHours: 0 })
+apply(stubCtx, currentConfig)
+const archivedBlank = await ok('/prepare', { requestId: 'reuse-1', locale: 'en' })
+await ok('/session-op', { sessionId: archivedBlank.sessionId, op: 'archive' })
+const afterArchive = await ok('/prepare', { requestId: 'reuse-2', locale: 'en' })
+assert.notEqual(afterArchive.sessionId, archivedBlank.sessionId, 'an archived blank conversation must not be reused')
+assert.equal(afterArchive.reused, false)
+step('prepare (archived reuse)', 'archived blanks are never handed back')
+
+routeHandlers = new Map()
+workspaces.length = 0
+sessions.clear()
+archived.clear()
+pinned.clear()
+const concurrentRoot = path.join(workdir, 'concurrent-root')
+await fsp.mkdir(concurrentRoot, { recursive: true })
+currentConfig = normalizeConfig({ workspaceRoot: concurrentRoot, trashOnDelete: false, autoReclaimHours: 0, reuseBlank: false })
+apply(stubCtx, currentConfig)
+const [dupOne, dupTwo] = await Promise.all([
+  ok('/prepare', { requestId: 'double-click', locale: 'en' }),
+  ok('/prepare', { requestId: 'double-click', locale: 'en' }),
+])
+assert.equal(dupOne.sessionId, dupTwo.sessionId, 'one requestId must produce one conversation')
+assert.equal(workspaces.length, 1, 'one requestId must produce one registration')
+step('prepare (concurrent)', 'one requestId maps to one conversation and one folder')
 
 // clean up the sandbox
 await fsp.rm(workdir, { recursive: true, force: true })
