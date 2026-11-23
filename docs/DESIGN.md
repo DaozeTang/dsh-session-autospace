@@ -67,7 +67,7 @@ DSH 没有为「新建会话」提供插槽：侧栏、标题栏和 `session.new
 | `index.js`（Host） | 创建目录、登记/撤销工作区、收尾、清扫、清单、废纸篓、配置写入 | 不读消息内容，不绕过 DSH 服务直接改会话 |
 | `client.js`（Browser） | 工作区菜单、`settings.section` 设置分区、`startSession` 包装 | 不碰文件系统，不发远程请求 |
 
-浏览器只通过同源 `POST /api/session-autospace/*` 与 Host 通信。所有路由先过 DSH 的同源 admission fence，再解析 JSON；成功返回 `{ok:true, value}`，失败返回 `{ok:false, code, message}`。
+浏览器只通过同源 `POST /api/session-autospace/*` 与 Host 通信。路由以 `auth: 'required'` 注册，同源与身份准入由 DSH 的 WebServer 在进入处理器之前完成，处理器只接收已经准入的 Peer；旧宿主不交 Peer 时插件自己再跑一遍 fence。之后才解析 JSON：成功返回 `{ok:true, value}`，失败返回 `{ok:false, code, message}`。
 
 ## 6. 数据与不变量
 
@@ -89,6 +89,7 @@ $DSH_HOME/session-autospace/
 
 - 工作路径：绝对路径、无 NUL、`mkdir -p` 后 `realpath` 稳定、可写。
 - 请求：`POST` JSON、body ≤ 64 KiB、操作白名单、标题 ≤ 200 字符、批量 ≤ 100 条。
+- 准入：路由声明 `auth: 'required'`，由 DSH 完成 Host/Origin 校验与身份认证并交来 Peer，插件不再调用 `connection.admit`（0.2.3 起该调用会要求调用方注入 `connection.authentication`）；没有 Peer 的请求走本地 fence，fence 不可用则拒绝。
 - 所有路径和会话校验在 Host 侧完成；浏览器传来的路径只作为候选值。
 - 错误只回显相对信息，不回显其他路径。
 - 插件不发起远程请求，没有遥测；界面只使用宿主设计令牌和本地资源。
@@ -99,7 +100,9 @@ $DSH_HOME/session-autospace/
 
 | 缺失能力 | 降级行为 |
 | --- | --- |
-| `webServer` / `connection` | 路由不注册，菜单入口置灰并说明原因 |
+| `webServer` | 路由不注册，菜单入口置灰并说明原因 |
+| `connection`（只影响旧宿主的回退 fence） | 无 Peer 的请求返回 503，不会因缺少 fence 而放行 |
+| 宿主不传 Peer（早于路由准入的版本） | 自动退回本地 fence，行为与旧版一致 |
 | `configEditor` | 设置分区只读，开关置灰 |
 | 系统废纸篓 | 删除置灰，保留归档并引导「在访达中显示」 |
 | `session/event` | 由客户端 blank 观测和激活清扫收尾 |

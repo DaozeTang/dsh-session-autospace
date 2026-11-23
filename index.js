@@ -1,5 +1,5 @@
 /**
- * Session autospace — Host half.
+ * Session Autospace — Host half.
  *
  * Gives "no workspace" first-class treatment: for a new conversation the plugin
  * mints a real session id, creates `<working path>/<session id>` as a directory,
@@ -191,7 +191,28 @@ function sendJson(res, status, payload) {
 }
 
 /**
- * Ask the connection service whether this request may run at all.
+ * Decide whether one request may run.
+ *
+ * DSH admits a registered route before its handler: the WebServer applies the
+ * browser-trust fence and the composed authentication, then hands the admitted
+ * Peer to the handler. A request that arrived with a Peer was therefore checked
+ * by the Host itself, and asking again would fail — the connection service
+ * re-enters this plugin's Context for `connection.authentication`, a service a
+ * route plugin does not inject. Hosts that pass no Peer still get the local
+ * fence below.
+ * @param connection - the composition's connection service, read lazily.
+ * @param req - incoming request (only headers are read).
+ * @param peer - the Peer the Host admitted for this request, when it passes one.
+ * @returns a rejection status, or undefined when admitted.
+ */
+function admissionRejection(connection, req, peer) {
+  if (peer !== undefined && peer !== null) return undefined
+  return rejectionOf(connection, req)
+}
+
+/**
+ * Fallback fence for a Host that hands the handler no Peer and leaves admission
+ * to the plugin.
  * @param connection - the composition's connection service.
  * @param req - incoming request (only headers are read).
  * @returns a rejection status, or undefined when admitted.
@@ -1377,17 +1398,22 @@ export function apply(ctx, rawConfig) {
     { path: '/maintenance', run: async (body) => maintenance(body) },
   ]
 
-  // The browser half talks over same-origin POST routes: register them only
-  // while both the HTTP carrier and the trust fence exist.
-  ctx.inject(['webServer', 'connection'], (sctx) => {
+  // The browser half talks over same-origin POST routes. `auth: 'required'`
+  // declares them to the WebServer, which applies its own browser-trust fence
+  // and authentication before the handler runs and passes the admitted Peer as
+  // the third argument; a Host without that contract still reaches the local
+  // fence through `admissionRejection`. Registering needs nothing but the HTTP
+  // carrier: without it the browser half reports the Host offline.
+  ctx.inject(['webServer'], (sctx) => {
     const server = sctx.get('webServer')
     for (const route of routeTable) {
       sctx.effect(() => server.register({
         kind: 'exact',
         path: ROUTE_PREFIX + route.path,
-        handler: async (req, res) => {
+        auth: 'required',
+        handler: async (req, res, peer) => {
           try {
-            const rejection = rejectionOf(ctx.get('connection'), req)
+            const rejection = admissionRejection(ctx.get('connection'), req, peer)
             if (rejection !== undefined) {
               res.statusCode = rejection
               res.end()

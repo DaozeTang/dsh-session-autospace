@@ -1,5 +1,5 @@
 /**
- * Session autospace — browser half.
+ * Session Autospace — browser half.
  *
  * Two registrations:
  * - `conversation.hero.workspace` (single): the workspace menu shown by the
@@ -43,7 +43,7 @@ window.__ModuleLoader__.load({
       'menu.hostUnavailable': 'Plugin host channel unavailable',
       'menu.reveal': 'Show in Finder',
       'section.nav': 'Autospace',
-      'section.title': 'Session autospace',
+      'section.title': 'Session Autospace',
       'section.intro': 'Working path, feature switches, and the scratch conversations this plugin created.',
       'path.title': 'Working path',
       'path.desc': 'Every new conversation gets its own folder under this path, named after its session. That folder is the conversation\'s working directory and sandbox boundary.',
@@ -212,8 +212,8 @@ window.__ModuleLoader__.load({
       'menu.failed': '无法开始这次对话',
       'menu.hostUnavailable': '插件宿主通道不可用',
       'menu.reveal': '在访达中显示',
-      'section.nav': '会话自动空间',
-      'section.title': '会话自动空间',
+      'section.nav': 'Autospace',
+      'section.title': 'Session Autospace',
       'section.intro': '工作路径、功能开关，以及插件创建的临时会话。',
       'path.title': '工作路径',
       'path.desc': '每个新对话都在此路径下获得以 session ID 命名的独立文件夹，它就是该对话的工作目录与沙盒边界。',

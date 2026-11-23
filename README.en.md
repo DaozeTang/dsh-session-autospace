@@ -70,13 +70,13 @@ The menu is still DSH's workspace menu: existing workspaces, a separator, then *
 
 <sub>Click the image for the full-size render.</sub>
 
-The Settings panel gains a **Session autospace** section. The working-path card accepts an absolute path and offers Choose, Show in Finder, and Restore default. Each feature switch takes effect immediately. The manager joins conversation rows with folder facts and maintenance actions. The plugin page itself keeps only the description, the enable switch, and uninstall.
+The Settings panel gains a **Session Autospace** section. The working-path card accepts an absolute path and offers Choose, Show in Finder, and Restore default. Each feature switch takes effect immediately. The manager joins conversation rows with folder facts and maintenance actions. The plugin page itself keeps only the description, the enable switch, and uninstall.
 
 ## Install
 
 ### Requirements
 
-- DSH `>=0.2.1-rc.2 <1.0.0` (see `engines.dsh` in `package.json`).
+- DSH `>=0.2.1-rc.2 <1.0.0` (see `engines.dsh` in `package.json`); verified on 0.2.3-alpha.2.
 - A working `dsh` CLI.
 - Network access to GitHub and a `git` binary on your machine (pnpm needs it to resolve git-hosted dependencies).
 - macOS, Linux, or Windows. Folder removal uses the system Trash; when it is unavailable the UI points you to **Show in Finder** instead of degrading to a hard delete.
@@ -303,7 +303,7 @@ $DSH_HOME/session-autospace/
 - Session: must exist, and `header.cwd` must be exactly `realpath(root)/<session id>`. Rename, pin, archive, trash, and every maintenance action pass this check first; a conversation outside the current working path gets `NOT_SCRATCH`.
 - Deletion: a running conversation gets `SESSION_RUNNING` by default; after the UI confirms, the retry carries `stop: true`, and the Host archives and stops the current turn. Deleting an already-gone folder returns the same successful end state.
 - Maintenance: `reclaimBlank`, `orphans`, and `rebuildMissing` re-read the session list and validate each id before acting; freshly created folders that may still be waiting for their session are skipped.
-- Requests: `POST` JSON, body ≤ 64 KiB, same-origin admission fence first; operations go through an allowlist, titles ≤ 200 characters, bulk ≤ 100 rows.
+- Requests: `POST` JSON, body ≤ 64 KiB. Routes declare `auth: 'required'`, so DSH's WebServer applies its same-origin and identity admission before the handler runs, and the handler trusts only the Peer it is handed. On a Host that hands over no Peer the plugin runs the same fence itself.
 - Errors carry a code and a relative message, never another path.
 - When the Trash is unavailable the plugin returns an explicit error and the UI points to Show in Finder; it never falls back to a hard delete.
 
@@ -343,7 +343,8 @@ There is no exact-version gate and no `@deepseek-ai/*` entry in `peerDependencie
 
 | Missing capability | Behaviour |
 | --- | --- |
-| `webServer` or `connection` | Routes are not registered; the menu entry is disabled with a reason |
+| `webServer` | Routes are not registered; the menu entry is disabled with a reason |
+| `connection` (fallback fence only) | A request that arrives without a Peer is refused with 503 — a missing fence never admits one |
 | `configEditor` | The settings section is read-only; switches are disabled with a reason |
 | `workspaceRegistry` | The manager card is not rendered; path and switches still work |
 | System Trash unavailable | Delete is disabled; archive remains; UI points to Show in Finder |

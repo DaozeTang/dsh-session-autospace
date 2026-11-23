@@ -284,7 +284,7 @@ const statusFixture = {
   pendingSettles: 0,
   lastSweep: { at: now - 5_000, settled: 1, abandoned: 0, kept: 0 },
   lastPick: 'scratch',
-  version: '0.2.2-rc.3',
+  version: '0.2.3-alpha.2',
 }
 
 const inventoryFixture = {
@@ -469,7 +469,7 @@ results.push(['menu (open)', '2 workspaces + add + scratch'])
 
 const section = renderSlotEntry('settings.section', { close: () => {} })
 const sectionText = collectText(section).join(' | ')
-for (const expected of ['Session autospace', 'Working path', 'Features', 'Remember the last choice', 'Scratch conversations', 'How the sandbox boundary works', 'Recently updated', 'Select all']) {
+for (const expected of ['Session Autospace', 'Working path', 'Features', 'Remember the last choice', 'Scratch conversations', 'How the sandbox boundary works', 'Recently updated', 'Select all']) {
   if (!sectionText.includes(expected)) throw new Error(`settings section is missing "${expected}": ${sectionText.slice(0, 600)}`)
 }
 if (sectionText.includes('Folder mark on conversation rows')) throw new Error('the removed row badge switch still renders')

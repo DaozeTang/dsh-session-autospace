@@ -476,6 +476,20 @@ assert.equal(untrusted.body, '')
 stubCtx.get = originalGet
 step('trust fence', 'unadmitted request answered 403 with no body')
 
+// DSH 0.2.2+ admits a registered route itself and hands the handler the Peer;
+// the local fence must stay out of the way there, because connection.admit now
+// re-enters this plugin's Context for connection.authentication.
+assert.equal(adminHandler.auth, 'required', 'routes declare the Host auth policy')
+const peerAdmitted = makeResponse()
+stubCtx.get = (name) => (name === 'connection'
+  ? { admit() { throw new Error('cannot get property "connection.authentication" without inject') } }
+  : originalGet.call(stubCtx, name))
+await adminHandler.handler(makeRequest({}), peerAdmitted, { principal: { kind: 'owner' } })
+stubCtx.get = originalGet
+assert.equal(peerAdmitted.statusCode, 200, 'a Host-admitted request needs no local fence')
+assert.equal(JSON.parse(peerAdmitted.body).ok, true)
+step('host admission', 'the admitted Peer replaces the local fence')
+
 // activation sweep: a leftover registration with no session is removed, a
 // blank one older than the threshold is reclaimed
 routeHandlers = new Map()
