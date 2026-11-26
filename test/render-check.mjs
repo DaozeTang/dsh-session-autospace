@@ -20,7 +20,7 @@ const INJECT_MARKER = '    return {\n      inject: [\'slots\', \'locale\', \'ses
 if (!source.includes(INJECT_MARKER)) throw new Error('injection marker not found')
 const instrumented = source.replace(
   INJECT_MARKER,
-  `    globalThis.__DSA__ = { WorkspaceMenu, SettingsSection, SettingsPage, RowMenu, Dialog, store, RUNTIME, rowLabel, rowMatchesQuery }\n${INJECT_MARKER}`,
+  `    globalThis.__DSA__ = { WorkspaceMenu, SettingsSection, SettingsPage, RowMenu, Dialog, store, RUNTIME, rowLabel, rowMatchesQuery, matchesFilter, isSessionRunningError, reconcileArchive }\n${INJECT_MARKER}`,
 )
 
 // --------------------------------------------------------------- React stub ---
@@ -300,8 +300,10 @@ const inventoryFixture = {
 
 const registered = []
 const navigationCalls = []
+const archiveNavigationCalls = []
 const uiWorkspace = {
   openSession: () => {},
+  archiveSession: async (...args) => { archiveNavigationCalls.push(args) },
   pickDirectory: async () => null,
   startSession: (...args) => { navigationCalls.push(args) },
 }
@@ -489,6 +491,84 @@ if (internal.rowLabel(plainRow, key => ({ 'row.untitled': 'Untitled conversation
   throw new Error('an untitled settled row must fall back to Untitled conversation')
 }
 results.push(['untitled row', 'label + search fall back safely'])
+
+// Deletion archives, so the default view must stop showing the deleted row
+// while the explicit recovery filters still include it.
+const filterRow = { archived: true, running: false, blank: false, exists: false }
+if (internal.matchesFilter(filterRow, 'unarchived')) throw new Error('an archived row leaked into the default view')
+if (!internal.matchesFilter(filterRow, 'archived')) throw new Error('the Archived filter lost an archived row')
+if (!internal.matchesFilter(filterRow, 'missing')) throw new Error('the Folder missing filter lost an archived missing row')
+if (internal.matchesFilter({ ...filterRow, running: true }, 'running')) throw new Error('an archived running row leaked into Running')
+workspacesFixture.archivedSessionIds.push(SESSION_A)
+const sectionArchived = renderSlotEntry('settings.section', { close: () => {} })
+const archivedDefaultText = collectText(sectionArchived).join(' | ')
+if (archivedDefaultText.includes('How the sandbox boundary works')) throw new Error('the default manager still shows a deleted/archived row')
+if (!archivedDefaultText.includes('New Session')) throw new Error('the default manager hid an unarchived row')
+workspacesFixture.archivedSessionIds.pop()
+results.push(['manager default filter', 'archived rows hidden; Archived and Folder missing remain recovery views'])
+
+if (!internal.isSessionRunningError({ code: 'SESSION_RUNNING' })) throw new Error('activity refusal was not recognized')
+if (internal.isSessionRunningError({ code: 'INTERNAL' })) throw new Error('an unrelated failure was treated as running activity')
+
+// The custom Host route owns folder cleanup; the idempotent native archive echo
+// owns releasing the current main view. Both delete and archive must use it.
+const requestLog = []
+globalThis.fetch = async (url, init) => {
+  requestLog.push({ url, body: JSON.parse(init.body) })
+  return { ok: true, json: async () => ({ ok: true, value: { ok: true, archived: true } }) }
+}
+await internal.RUNTIME.op(SESSION_A, 'archive', undefined, { stop: true })
+await internal.RUNTIME.trash(SESSION_B, { stop: false })
+const archiveEchoes = archiveNavigationCalls.filter(([id]) => id === SESSION_A || id === SESSION_B)
+if (archiveEchoes.length !== 2) throw new Error(`archive navigation was not reconciled: ${archiveEchoes.length}`)
+if (archiveEchoes[0][1]?.stopActivity !== true || archiveEchoes[1][1]?.stopActivity === true) {
+  throw new Error('archive navigation lost the confirmed-stop distinction')
+}
+if (requestLog[0]?.url !== '/api/session-autospace/session-op' || requestLog[0]?.body?.stop !== true) {
+  throw new Error('archive request payload changed unexpectedly')
+}
+if (requestLog[1]?.url !== '/api/session-autospace/trash' || 'stop' in (requestLog[1]?.body ?? {})) {
+  throw new Error('quiet delete must not send stop=true')
+}
+globalThis.fetch = realFetch
+results.push(['archive navigation', 'current Session released; quiet delete does not claim stop confirmation'])
+
+const rowMenuKeep = renderNode(createElement(internal.RowMenu, {
+  anchor,
+  row: { id: SESSION_A, title: 'Keep folder', pinned: false, archived: false, exists: true, folder: { bytes: 0 }, cwd: `${ROOT}/${SESSION_A}` },
+  t: key => key,
+  trashAvailable: true,
+  trashOnDelete: false,
+  onClose: () => {},
+  onSelect: () => {},
+}))
+if (!collectText(rowMenuKeep).includes('action.trashKeep')) throw new Error('trash-off mode still promises Move to Trash')
+results.push(['trash-off copy', 'menu explains that delete archives and keeps the folder'])
+
+internal.store.set({
+  status: { ...statusFixture, caps: { ...statusFixture.caps, trash: false }, config: { ...statusFixture.config, trashOnDelete: true } },
+  inventory: inventoryFixture,
+})
+const sectionNoTrash = renderSlotEntry('settings.section', { close: () => {} })
+const cleanupSwitch = collectButtons(sectionNoTrash, 'switch')
+  .find(node => node.props?.['aria-label'] === 'Move folders to the Trash')
+if (cleanupSwitch?.props?.disabled === true) throw new Error('Trash unavailability prevents switching to archive-only mode')
+internal.store.set({ status: statusFixture, inventory: inventoryFixture })
+results.push(['Trash unavailable', 'cleanup can still be turned off for archive-only deletion'])
+
+const missingRowMenu = renderNode(createElement(internal.RowMenu, {
+  anchor,
+  row: { id: SESSION_A, title: 'Missing folder', pinned: false, archived: false, exists: false, folder: undefined, cwd: `${ROOT}/${SESSION_A}` },
+  t: key => key,
+  trashAvailable: true,
+  trashOnDelete: true,
+  onClose: () => {},
+  onSelect: () => {},
+}))
+const missingTrashItem = collectButtons(missingRowMenu, 'menuitem')
+  .find(node => collectText(node).includes('action.trash'))
+if (missingTrashItem?.props?.disabled === true) throw new Error('a missing folder still blocks the useful archive operation')
+results.push(['missing-folder delete', 'archive remains available when the folder is already gone'])
 
 internal.store.set({
   status: { ...statusFixture, config: { ...statusFixture.config, management: false } },

@@ -86,6 +86,8 @@ window.__ModuleLoader__.load({
       'manage.countMissing': ' · missing: {n}',
       'filter.all': 'All',
       'filter.active': 'Active',
+      'filter.unarchived': 'Unarchived',
+      'filter.running': 'Running',
       'filter.blank': 'New',
       'filter.archived': 'Archived',
       'filter.missing': 'Folder missing',
@@ -115,6 +117,8 @@ window.__ModuleLoader__.load({
       'action.copyPath': 'Copy path',
       'action.trash': 'Move to Trash',
       'action.trashRunning': 'Stop and move to Trash',
+      'action.trashKeep': 'Archive and keep folder',
+      'action.trashKeepRunning': 'Stop and archive (keep folder)',
       'action.more': 'Actions for this conversation',
       'trash.unavailable': 'The system Trash is unavailable on this machine.',
       'bulk.selected': '{n} selected',
@@ -122,11 +126,16 @@ window.__ModuleLoader__.load({
       'bulk.archive': 'Archive',
       'bulk.unarchive': 'Unarchive',
       'bulk.trash': 'Move to Trash',
+      'bulk.trashKeep': 'Archive and keep folders',
       'bulk.clear': 'Clear selection',
       'bulk.limit': 'Bulk actions handle up to {n} conversations at a time.',
       'bulk.limitShort': 'limit {n}',
       'bulk.partial': '{failed} of {total} could not be updated.',
       'bulk.keptFolders': '{n} folders stayed: the system Trash is unavailable.',
+      'bulk.countDone': '{n} trashed',
+      'bulk.countKept': '{n} folders kept',
+      'bulk.countPending': '{n} waiting for work to stop',
+      'bulk.countFailed': '{n} failed',
       'confirm.trash.title': 'Move to Trash?',
       'confirm.trash.body': 'The conversation is archived (restorable from the archive section) and its folder moves to the system Trash.',
       'confirm.trash.confirm': 'Move to Trash',
@@ -134,8 +143,17 @@ window.__ModuleLoader__.load({
       'confirm.trashRunning.title': 'Stop and move to Trash?',
       'confirm.trashRunning.body': 'This conversation is still running. Moving it to the Trash stops the current turn, archives the conversation, and moves its folder to the system Trash.',
       'confirm.trashRunning.confirm': 'Stop and move to Trash',
+      'confirm.trashKeep.title': 'Archive conversation?',
+      'confirm.trashKeep.named': '“{name}” is archived (restorable from the archive section). Its folder is kept because Trash cleanup is off.',
+      'confirm.trashKeep.confirm': 'Archive',
+      'confirm.trashKeepRunning.title': 'Stop and archive?',
+      'confirm.trashKeepRunning.body': 'This conversation still has work. Archiving stops it; the folder is kept because Trash cleanup is off.',
       'confirm.bulkTrash.title': 'Move {n} conversations to the Trash?',
       'confirm.bulkTrash.body': 'These conversations are archived (restorable from the archive section) and their folders move to the system Trash.',
+      'confirm.bulkTrashKeep.title': 'Archive {n} conversations?',
+      'confirm.bulkTrashKeep.body': 'These conversations are archived (restorable from the archive section). Their folders are kept because Trash cleanup is off.',
+      'confirm.bulkTrashKeepRunning.body': 'These conversations are archived. Any remaining work stops first; their folders are kept because Trash cleanup is off.',
+      'confirm.bulkTrashRunning.title': 'Stop running conversations and move to the Trash?',
       'confirm.bulkTrashRunning.body': 'These conversations are archived (restorable from the archive section) and their folders move to the system Trash. Any conversation still running stops its current turn first.',
       'confirm.rename.title': 'Rename conversation',
       'confirm.rename.save': 'Rename',
@@ -166,7 +184,7 @@ window.__ModuleLoader__.load({
       'status.yes': 'available',
       'status.no': 'unavailable',
       'note.groups': 'While a conversation is staged, the sidebar shows a temporary "No workspace" group beside any Ungrouped group it already has. Both return to one on send, or when you switch away.',
-      'note.workflow': 'DSH has no permanent delete: deleting archives the conversation and moves its folder to the system Trash. Enabled features are undone by turning them off or disabling the plugin; existing conversations and folders stay.',
+      'note.workflow': 'DSH has no permanent delete: deleting archives the conversation and, when Trash cleanup is on, moves its folder to the system Trash. Enabled features are undone by turning them off or disabling the plugin; existing conversations and folders stay.',
       'error.load': 'Could not read the plugin state.',
       'error.host': 'The plugin host is unavailable. Reopen this page or check that the plugin is enabled.',
       'error.generic': 'Something went wrong.',
@@ -189,6 +207,7 @@ window.__ModuleLoader__.load({
       'confirm.bulkArchiveRunning.body': "These conversations are archived. Any conversation still running stops its current turn first.",
       'toast.trashLeft': "Archived. The folder stayed: {reason}",
       'toast.trashSkipped': "Archived. The folder was kept because \"move folders to the Trash\" is off.",
+      'toast.stopPending': 'Archived. The folder was kept while work stops; open Archived and retry after it settles.',
       'path.checking': "Checking…",
       'path.notWritable': "This path cannot be created; pick a writable folder.",
       'path.reveal': "Show in Finder",
@@ -256,6 +275,8 @@ window.__ModuleLoader__.load({
       'manage.countMissing': ' · 缺失 {n}',
       'filter.all': '全部',
       'filter.active': '进行中',
+      'filter.unarchived': '未归档',
+      'filter.running': '运行中',
       'filter.blank': '未开始',
       'filter.archived': '已归档',
       'filter.missing': '文件夹缺失',
@@ -285,6 +306,8 @@ window.__ModuleLoader__.load({
       'action.copyPath': '复制路径',
       'action.trash': '移入废纸篓',
       'action.trashRunning': '停止并移入废纸篓',
+      'action.trashKeep': '归档并保留文件夹',
+      'action.trashKeepRunning': '停止并归档（保留文件夹）',
       'action.more': '此会话的操作',
       'trash.unavailable': '本机无法使用系统废纸篓。',
       'bulk.selected': '已选 {n} 项',
@@ -292,11 +315,16 @@ window.__ModuleLoader__.load({
       'bulk.archive': '归档',
       'bulk.unarchive': '取消归档',
       'bulk.trash': '移入废纸篓',
+      'bulk.trashKeep': '归档并保留文件夹',
       'bulk.clear': '取消选择',
       'bulk.limit': '批量操作一次最多处理 {n} 个会话。',
       'bulk.limitShort': '上限 {n}',
       'bulk.partial': '{total} 个中有 {failed} 个未能更新。',
       'bulk.keptFolders': '{n} 个文件夹未能回收：系统废纸篓不可用。',
+      'bulk.countDone': '{n} 个已回收',
+      'bulk.countKept': '{n} 个文件夹保留',
+      'bulk.countPending': '{n} 个正在等待工作停止',
+      'bulk.countFailed': '{n} 个失败',
       'confirm.trash.title': '移入废纸篓？',
       'confirm.trash.body': '会话将被归档（可在侧栏归档区恢复），文件夹移入系统废纸篓。',
       'confirm.trash.confirm': '移入废纸篓',
@@ -304,8 +332,17 @@ window.__ModuleLoader__.load({
       'confirm.trashRunning.title': '停止并移入废纸篓？',
       'confirm.trashRunning.body': '这个会话仍在运行。移入废纸篓会停止当前回合、归档会话，并把文件夹移入系统废纸篓。',
       'confirm.trashRunning.confirm': '停止并移入废纸篓',
+      'confirm.trashKeep.title': '归档会话？',
+      'confirm.trashKeep.named': '「{name}」将被归档（可在归档区恢复）。因为关闭了废纸篓回收，文件夹会保留。',
+      'confirm.trashKeep.confirm': '归档',
+      'confirm.trashKeepRunning.title': '停止并归档？',
+      'confirm.trashKeepRunning.body': '这个会话仍有工作。归档会停止它；因为关闭了废纸篓回收，文件夹会保留。',
       'confirm.bulkTrash.title': '将 {n} 个会话移入废纸篓？',
       'confirm.bulkTrash.body': '这些会话将被归档（可在侧栏归档区恢复），它们的文件夹移入系统废纸篓。',
+      'confirm.bulkTrashKeep.title': '归档 {n} 个会话？',
+      'confirm.bulkTrashKeep.body': '这些会话将被归档（可在侧栏归档区恢复）。因为关闭了废纸篓回收，文件夹会保留。',
+      'confirm.bulkTrashKeepRunning.body': '这些会话将被归档，剩余工作会先停止；因为关闭了废纸篓回收，文件夹会保留。',
+      'confirm.bulkTrashRunning.title': '停止运行中的会话并移入废纸篓？',
       'confirm.bulkTrashRunning.body': '这些会话将被归档（可在侧栏归档区恢复），它们的文件夹移入系统废纸篓；仍在运行的会话会先停止当前回合。',
       'confirm.rename.title': '重命名会话',
       'confirm.rename.save': '重命名',
@@ -336,7 +373,7 @@ window.__ModuleLoader__.load({
       'status.yes': '可用',
       'status.no': '不可用',
       'note.groups': '暂存期间侧栏会临时多出「不指定工作区」分组；若已有未分组分组，两者并存。发送或切走即恢复为一个。',
-      'note.workflow': 'DSH 没有永久删除：删除的含义是归档对话并把文件夹移入系统废纸篓。关闭开关或禁用插件即可复原对应界面，已产生的会话与目录保留。',
+      'note.workflow': 'DSH 没有永久删除：删除会归档对话；开启「删除时回收文件夹」时，还会把文件夹移入系统废纸篓。关闭开关或禁用插件即可复原对应界面，已产生的会话与目录保留。',
       'error.load': '无法读取插件状态。',
       'error.host': '插件宿主不可用。请重新打开本页，或确认插件已启用。',
       'error.generic': '操作失败。',
@@ -359,6 +396,7 @@ window.__ModuleLoader__.load({
       'confirm.bulkArchiveRunning.body': "这些会话会被归档；仍在运行的会话会先停止当前回合。",
       'toast.trashLeft': "已归档。文件夹保留：{reason}",
       'toast.trashSkipped': "已归档。因为「删除时回收文件夹」关闭，文件夹被保留。",
+      'toast.stopPending': '已归档。工作停止期间文件夹暂时保留；停止完成后请到「已归档」重试。',
       'path.checking': "正在检查…",
       'path.notWritable': "该路径无法创建，请选一个可写的目录。",
       'path.reveal': "在访达中显示",
@@ -462,6 +500,7 @@ window.__ModuleLoader__.load({
       if (payload.ok !== true) {
         const error = new Error(String(payload.message ?? payload.code ?? 'Request failed'))
         error.code = payload.code
+        error.activity = payload.activity
         throw error
       }
       return payload.value
@@ -689,6 +728,36 @@ window.__ModuleLoader__.load({
       if (error === null || error === undefined) return 'unknown error'
       if (typeof error === 'string') return error
       return String(error.message ?? error)
+    }
+
+    /**
+     * Whether the Host refused an archive because DSH still sees work that the
+     * Session summary's `running` bit does not cover (jobs, subagents, schedules).
+     * @param error - request failure.
+     * @returns whether a stop confirmation is required.
+     */
+    function isSessionRunningError(error) {
+      return error?.code === 'SESSION_RUNNING' || error?.code === 'SESSION_ACTIVE'
+    }
+
+    /**
+     * Echo a completed archive through DSH's navigation service. The custom Host
+     * route owns scratch validation and folder cleanup; this idempotent call owns
+     * the native side effect of releasing the current main-view Session.
+     * @param sessionId - archived Session.
+     * @param options - whether stop-and-archive was confirmed.
+     * @returns whether the navigation service accepted the echo.
+     */
+    async function reconcileArchive(sessionId, options) {
+      const ui = RUNTIME.ctx?.get?.('uiWorkspace')
+      if (typeof ui?.archiveSession !== 'function') return false
+      try {
+        await ui.archiveSession(sessionId, options?.stop === true ? { stopActivity: true } : {})
+        return true
+      } catch (error) {
+        console.warn('session-autospace: archive navigation reconciliation failed:', error)
+        return false
+      }
     }
 
     /**
@@ -1820,11 +1889,28 @@ window.__ModuleLoader__.load({
     }
 
     /**
+     * Apply one manager filter. Deleted Sessions are archived, so the default
+     * Unarchived view must hide them; Archived and Folder missing remain
+     * explicit recovery/maintenance views.
+     * @param row - manager row.
+     * @param filter - selected filter id.
+     * @returns whether the row belongs in the filtered list.
+     */
+    function matchesFilter(row, filter) {
+      if (filter === 'unarchived') return row.archived !== true
+      if (filter === 'running') return row.running === true && row.archived !== true
+      if (filter === 'blank') return row.blank === true && row.archived !== true
+      if (filter === 'archived') return row.archived === true
+      if (filter === 'missing') return row.exists === false
+      return true
+    }
+
+    /**
      * One row's action popover.
-     * @param props - `anchor`, `row`, `t`, `trashAvailable`, `onClose`, `onSelect`.
+     * @param props - `anchor`, `row`, `t`, `trashAvailable`, `trashOnDelete`, `onClose`, `onSelect`.
      * @returns the popover.
      */
-    function RowMenu({ anchor, row, t, trashAvailable, onClose, onSelect }) {
+    function RowMenu({ anchor, row, t, trashAvailable, trashOnDelete, onClose, onSelect }) {
       const popRef = useRef(null)
       const firstRef = useRef(null)
       const closeLatest = useRef(onClose)
@@ -1866,8 +1952,8 @@ window.__ModuleLoader__.load({
       }, [])
       if (box === null) return null
       const missingFolder = row.exists === false
-      const trashBlocked = missingFolder || trashAvailable === false
-      const trashTitle = trashAvailable === false ? t('trash.unavailable') : missingFolder ? t('badge.missing') : undefined
+      const trashBlocked = trashAvailable === false
+      const trashTitle = trashAvailable === false ? t('trash.unavailable') : undefined
       const items = [
         { id: 'open', label: t('action.open'), icon: IconExternal },
         { id: 'rename', label: t('action.rename'), icon: IconPencil },
@@ -1889,7 +1975,9 @@ window.__ModuleLoader__.load({
         { id: 'copy', label: t('action.copyPath'), icon: IconCopy },
         {
           id: 'trash',
-          label: row.running && !row.archived ? t('action.trashRunning') : t('action.trash'),
+          label: row.running && !row.archived
+            ? t(trashOnDelete === false ? 'action.trashKeepRunning' : 'action.trashRunning')
+            : t(trashOnDelete === false ? 'action.trashKeep' : 'action.trash'),
           icon: IconTrash,
           tone: 'danger',
           disabled: trashBlocked,
@@ -1949,7 +2037,7 @@ window.__ModuleLoader__.load({
       const root = status?.root
       const config = status?.config
       const hostDown = state.statusError !== null
-      const trashAvailable = status?.caps?.trash !== false
+      const trashAvailable = config?.trashOnDelete === false || status?.caps?.trash !== false
       // Without the workspace registry the manager could not archive, pin, or
       // trash anything; show the rest of the section instead of dead buttons.
       const managerAvailable = status?.caps?.workspaceRegistry !== false
@@ -1960,7 +2048,7 @@ window.__ModuleLoader__.load({
       const [pathError, setPathError] = useState(null)
       const [hoursDraft, setHoursDraft] = useState(null)
       const [query, setQuery] = useState('')
-      const [filter, setFilter] = useState('all')
+      const [filter, setFilter] = useState('unarchived')
       const [sort, setSort] = useState('updated')
       const [selected, setSelected] = useState(() => new Set())
       const [dialog, setDialog] = useState(null)
@@ -1992,10 +2080,7 @@ window.__ModuleLoader__.load({
       const visible = useMemo(() => {
         let list = rows
         if (searchTerm !== '') list = list.filter(row => rowMatchesQuery(row, searchTerm, t))
-        if (filter === 'active') list = list.filter(row => row.running && !row.archived)
-        else if (filter === 'blank') list = list.filter(row => row.blank && !row.archived)
-        else if (filter === 'archived') list = list.filter(row => row.archived)
-        else if (filter === 'missing') list = list.filter(row => row.exists === false)
+        if (filter !== 'all') list = list.filter(row => matchesFilter(row, filter))
         const sorted = [...list]
         if (sort === 'title') sorted.sort((a, b) => a.label.localeCompare(b.label))
         else if (sort === 'size') sorted.sort((a, b) => (b.folder?.bytes ?? 0) - (a.folder?.bytes ?? 0))
@@ -2138,6 +2223,7 @@ window.__ModuleLoader__.load({
       const reportDelete = useCallback((result) => {
         if (result === undefined) return
         if (result.trashed === true || result.alreadyGone === true) { notify(t('toast.done')); return }
+        if (result.activityPending === true) { notify(t('toast.stopPending')); return }
         if (result.kept === true) { notify(t('toast.trashSkipped')); return }
         if (typeof result.trashError === 'string') notify(t('toast.trashLeft', { reason: result.trashError }))
       }, [t])
@@ -2147,16 +2233,23 @@ window.__ModuleLoader__.load({
         if (ids.length === 0) return
         setBusyAction(true)
         let failed = 0
+        const failedIds = []
+        const active = []
         try {
           for (const id of ids) {
             try {
               await RUNTIME.op(id, op, undefined, options)
-            } catch {
-              failed += 1
+            } catch (error) {
+              if (op === 'archive' && isSessionRunningError(error)) active.push(id)
+              else { failed += 1; failedIds.push(id) }
             }
           }
-          if (failed === 0) setSelected(new Set())
-          notify(failed === 0 ? t('toast.done') : t('bulk.partial', { failed, total: ids.length }))
+          if (active.length > 0) {
+            setSelected(new Set([...active, ...failedIds]))
+            setDialog({ kind: 'bulkArchiveRunning', ids: active })
+          } else if (failed === 0) setSelected(new Set())
+          if (failed > 0) notify(t('bulk.partial', { failed, total: ids.length }))
+          else if (active.length === 0) notify(t('toast.done'))
           void refreshStatus()
         } finally {
           setBusyAction(false)
@@ -2175,26 +2268,48 @@ window.__ModuleLoader__.load({
             const result = await RUNTIME.trash(dialog.row.id, { stop: dialog.kind === 'trashRunning' })
             reportDelete(result)
             setSelected(current => without(current, dialog.row.id))
-          } else if (dialog.kind === 'bulkTrash') {
+          } else if (dialog.kind === 'bulkTrash' || dialog.kind === 'bulkTrashRunning') {
+            const stop = dialog.kind === 'bulkTrashRunning'
             const results = []
+            const active = []
             for (const id of dialog.ids) {
               try {
-                results.push({ value: await RUNTIME.trash(id, { stop: true }) })
-              } catch {
-                results.push({ failed: true })
+                results.push({ id, value: await RUNTIME.trash(id, { stop }) })
+              } catch (error) {
+                if (!stop && isSessionRunningError(error)) active.push(id)
+                else results.push({ id, failed: true })
               }
             }
-            setSelected(new Set())
-            const failed = results.filter(entry => entry.failed === true).length
+            // Quiet summaries can still own jobs/subagents/schedules. Let the
+            // authoritative Host refusal upgrade this batch to the existing
+            // stop confirmation instead of silently cancelling that work.
+            if (active.length > 0) {
+              const failedIds = results.filter(entry => entry.failed === true).map(entry => entry.id)
+              setSelected(new Set([...active, ...failedIds]))
+              setDialog({ kind: 'bulkTrashRunning', ids: active, keepFolder: dialog.keepFolder === true })
+              const failed = failedIds.length
+              if (failed > 0) notify(t('bulk.partial', { failed, total: dialog.ids.length }))
+              return
+            }
+            const failedIds = results.filter(entry => entry.failed === true).map(entry => entry.id)
+            setSelected(new Set(failedIds))
+            const failed = failedIds.length
             const kept = results.filter(entry => entry.value?.kept === true).length
+            const pending = results.filter(entry => entry.value?.activityPending === true).length
             const left = results.filter(entry => entry.value
               && entry.value.trashed !== true
               && entry.value.kept !== true
-              && entry.value.alreadyGone !== true).length
-            if (failed > 0) notify(t('bulk.partial', { failed, total: dialog.ids.length }))
-            else if (kept > 0) notify(t('toast.trashSkipped'))
-            else if (left > 0) notify(t('bulk.keptFolders', { n: left }))
-            else notify(t('toast.done'))
+              && entry.value.alreadyGone !== true
+              && entry.value.activityPending !== true).length
+            const done = results.filter(entry => entry.value?.trashed === true || entry.value?.alreadyGone === true).length
+            const summary = [
+              done > 0 ? t('bulk.countDone', { n: done }) : '',
+              kept > 0 ? t('bulk.countKept', { n: kept }) : '',
+              pending > 0 ? t('bulk.countPending', { n: pending }) : '',
+              left > 0 ? t('bulk.countKept', { n: left }) : '',
+              failed > 0 ? t('bulk.countFailed', { n: failed }) : '',
+            ].filter(Boolean).join(' · ')
+            notify(summary || t('toast.done'))
           } else if (dialog.kind === 'archiveRunning') {
             await RUNTIME.op(dialog.row.id, 'archive', undefined, { stop: true })
           } else if (dialog.kind === 'bulkArchiveRunning') {
@@ -2210,6 +2325,10 @@ window.__ModuleLoader__.load({
           }
           setDialog(null)
         } catch (error) {
+          if (dialog.kind === 'trash' && isSessionRunningError(error)) {
+            setDialog({ ...dialog, kind: 'trashRunning' })
+            return
+          }
           notify(messageOf(error))
         } finally {
           setDialogBusy(false)
@@ -2253,7 +2372,11 @@ window.__ModuleLoader__.load({
             return
           }
           if (action === 'trash') {
-            setDialog({ kind: row.running && !row.archived ? 'trashRunning' : 'trash', row })
+            setDialog({
+              kind: row.running && !row.archived ? 'trashRunning' : 'trash',
+              row,
+              keepFolder: config?.trashOnDelete === false,
+            })
             return
           }
           if (action === 'archive') {
@@ -2268,11 +2391,16 @@ window.__ModuleLoader__.load({
             }
           }
           await RUNTIME.op(row.id, action)
+          if (action === 'archive') setSelected(current => without(current, row.id))
           void refreshStatus()
         } catch (error) {
+          if (action === 'archive' && isSessionRunningError(error)) {
+            setDialog({ kind: 'archiveRunning', row })
+            return
+          }
           notify(messageOf(error))
         }
-      }, [close, t])
+      }, [close, config?.trashOnDelete, t])
 
       const selectedIds = useMemo(
         () => [...selected].filter(id => rows.some(row => row.id === id)).slice(0, MAX_BULK),
@@ -2468,7 +2596,7 @@ window.__ModuleLoader__.load({
         title: t('toggle.trashOnDelete'),
         description: t('toggle.trashOnDelete.desc'),
         checked: config?.trashOnDelete !== false,
-        disabled: busyAction || state.saving || status.caps?.trash === false || status.caps?.configEditor === false,
+        disabled: busyAction || state.saving || status.caps?.configEditor === false,
         onChange: (next) => { void toggleFeature('trashOnDelete', next) },
       }),
       h(FeatureRow, {
@@ -2516,8 +2644,8 @@ window.__ModuleLoader__.load({
         : h('div', { key: 'cfgErr', className: 'dsa-error' }, state.configError.message)
 
       const filterButtons = [
-        ['all', t('filter.all')],
-        ['active', t('filter.active')],
+        ['unarchived', t('filter.unarchived')],
+        ['running', t('filter.running')],
         ['blank', t('filter.blank')],
         ['archived', t('filter.archived')],
         ['missing', t('filter.missing')],
@@ -2682,8 +2810,12 @@ window.__ModuleLoader__.load({
             'data-tone': 'danger',
             disabled: busyAction || state.saving || !trashAvailable || bulkTargets.trash.length === 0,
             title: trashAvailable ? undefined : t('trash.unavailable'),
-            onClick: () => setDialog({ kind: 'bulkTrash', ids: bulkTargets.trash }),
-          }, `${t('bulk.trash')} (${bulkTargets.trash.length})`),
+            onClick: () => setDialog({
+              kind: bulkTargets.running > 0 ? 'bulkTrashRunning' : 'bulkTrash',
+              ids: bulkTargets.trash,
+              keepFolder: config?.trashOnDelete === false,
+            }),
+          }, `${t(config?.trashOnDelete === false ? 'bulk.trashKeep' : 'bulk.trash')} (${bulkTargets.trash.length})`),
           h('button', {
             type: 'button',
             className: 'dsa-btn',
@@ -2761,16 +2893,18 @@ window.__ModuleLoader__.load({
       )
 
       const dialogKind = dialog === null ? null : dialog.kind
-      const dialogRunning = dialogKind === 'trashRunning' || (dialogKind === 'bulkTrash'
+      const dialogRunning = dialogKind === 'trashRunning' || dialogKind === 'bulkTrashRunning' || (dialogKind === 'bulkTrash'
         && dialog.ids.some(id => rows.find(row => row.id === id)?.running === true))
       const dialogBody = dialogKind === 'rename'
         ? undefined
         : dialogKind === 'trash'
-          ? t('confirm.trash.named', { name: dialog.row.label })
+          ? t(dialog.keepFolder === true ? 'confirm.trashKeep.named' : 'confirm.trash.named', { name: dialog.row.label })
           : dialogKind === 'trashRunning'
-            ? t('confirm.trashRunning.body')
-            : dialogKind === 'bulkTrash'
-              ? (dialogRunning ? t('confirm.bulkTrashRunning.body') : t('confirm.bulkTrash.body'))
+            ? t(dialog.keepFolder === true ? 'confirm.trashKeepRunning.body' : 'confirm.trashRunning.body')
+            : dialogKind === 'bulkTrash' || dialogKind === 'bulkTrashRunning'
+              ? (dialog.keepFolder === true
+                ? t(dialogRunning ? 'confirm.bulkTrashKeepRunning.body' : 'confirm.bulkTrashKeep.body')
+                : t(dialogRunning ? 'confirm.bulkTrashRunning.body' : 'confirm.bulkTrash.body'))
               : dialogKind === 'archiveRunning'
                 ? t('confirm.archiveRunning.body')
                 : dialogKind === 'bulkArchiveRunning'
@@ -2785,11 +2919,15 @@ window.__ModuleLoader__.load({
         title: dialogKind === 'rename'
           ? t('confirm.rename.title')
           : dialogKind === 'trash'
-            ? t('confirm.trash.title')
+            ? t(dialog.keepFolder === true ? 'confirm.trashKeep.title' : 'confirm.trash.title')
             : dialogKind === 'trashRunning'
-              ? t('confirm.trashRunning.title')
-              : dialogKind === 'bulkTrash'
-                ? t('confirm.bulkTrash.title', { n: dialog.ids.length })
+              ? t(dialog.keepFolder === true ? 'confirm.trashKeepRunning.title' : 'confirm.trashRunning.title')
+              : dialogKind === 'bulkTrash' || dialogKind === 'bulkTrashRunning'
+                ? (dialog.keepFolder === true
+                  ? t(dialogRunning ? 'confirm.bulkArchiveRunning.title' : 'confirm.bulkTrashKeep.title', { n: dialog.ids.length })
+                  : dialogKind === 'bulkTrashRunning'
+                    ? t('confirm.bulkTrashRunning.title')
+                    : t('confirm.bulkTrash.title', { n: dialog.ids.length }))
                 : dialogKind === 'archiveRunning'
                   ? t('confirm.archiveRunning.title')
                   : dialogKind === 'bulkArchiveRunning'
@@ -2803,19 +2941,21 @@ window.__ModuleLoader__.load({
         confirmLabel: dialogKind === 'rename'
           ? t('confirm.rename.save')
           : dialogKind === 'trash'
-            ? t('confirm.trash.confirm')
+            ? t(dialog.keepFolder === true ? 'confirm.trashKeep.confirm' : 'confirm.trash.confirm')
             : dialogKind === 'trashRunning'
-              ? t('confirm.trashRunning.confirm')
+              ? t(dialog.keepFolder === true ? 'confirm.archiveRunning.confirm' : 'confirm.trashRunning.confirm')
               : dialogKind === 'bulkTrash'
-                ? t('confirm.trash.confirm')
-                : dialogKind === 'archiveRunning' || dialogKind === 'bulkArchiveRunning'
+                ? t(dialog.keepFolder === true ? 'confirm.trashKeep.confirm' : 'confirm.trash.confirm')
+                : dialogKind === 'bulkTrashRunning'
+                  ? t(dialog.keepFolder === true ? 'confirm.archiveRunning.confirm' : 'confirm.trashRunning.confirm')
+                  : dialogKind === 'archiveRunning' || dialogKind === 'bulkArchiveRunning'
                   ? t('confirm.archiveRunning.confirm')
                   : dialogKind === 'reclaim'
                     ? t('confirm.reclaim.confirm')
                     : dialogKind === 'orphans'
                       ? t('confirm.orphans.confirm')
                       : t('confirm.continue'),
-        tone: dialogKind === 'trash' || dialogKind === 'trashRunning' || dialogKind === 'bulkTrash' || dialogKind === 'orphans' || dialogKind === 'archiveRunning' || dialogKind === 'bulkArchiveRunning'
+        tone: dialogKind === 'trash' || dialogKind === 'trashRunning' || dialogKind === 'bulkTrash' || dialogKind === 'bulkTrashRunning' || dialogKind === 'orphans' || dialogKind === 'archiveRunning' || dialogKind === 'bulkArchiveRunning'
           ? 'danger'
           : 'primary',
         busy: dialogBusy,
@@ -2850,6 +2990,7 @@ window.__ModuleLoader__.load({
           row: menuFor.row,
           t,
           trashAvailable,
+          trashOnDelete: config?.trashOnDelete !== false,
           onClose: () => setMenuFor(null),
           onSelect: (action) => { void runRowAction(menuFor.row, action) },
         }),
@@ -3092,16 +3233,24 @@ window.__ModuleLoader__.load({
       RUNTIME.rememberPick = rememberPick
       RUNTIME.t = makeT(ctx.locale.getSnapshot().active)
       RUNTIME.reveal = async (sessionId) => { await request('/reveal', { sessionId }) }
-      RUNTIME.op = async (sessionId, op, title, options) => request('/session-op', {
-        sessionId,
-        op,
-        ...(title === undefined ? {} : { title }),
-        ...(options?.stop === true ? { stop: true } : {}),
-      })
-      RUNTIME.trash = async (sessionId, options) => request('/trash', {
-        sessionId,
-        ...(options?.stop === true ? { stop: true } : {}),
-      })
+      RUNTIME.op = async (sessionId, op, title, options) => {
+        const value = await request('/session-op', {
+          sessionId,
+          op,
+          ...(title === undefined ? {} : { title }),
+          ...(options?.stop === true ? { stop: true } : {}),
+        })
+        if (op === 'archive') await reconcileArchive(sessionId, options)
+        return value
+      }
+      RUNTIME.trash = async (sessionId, options) => {
+        const value = await request('/trash', {
+          sessionId,
+          ...(options?.stop === true ? { stop: true } : {}),
+        })
+        if (value?.archived === true) await reconcileArchive(sessionId, options)
+        return value
+      }
       RUNTIME.maintain = async (op, ids) => request('/maintenance', { op, ids })
 
       RUNTIME.dispose = () => {

@@ -253,16 +253,16 @@ DSH 没有为新会话入口提供插槽，侧栏按钮、标题栏按钮和 `se
 | 打开会话 | 切到该对话 |
 | 重命名 | 只改标题，不碰目录 |
 | 置顶 / 取消置顶 | 调用 DSH 的 pin 能力 |
-| 归档 / 取消归档 | 归档可恢复；运行中的会话需先确认停止 |
+| 归档 / 取消归档 | 归档可恢复；当前回合、后台任务、子代理或定时任务等活动需先确认停止 |
 | 在访达中显示 | 通过宿主的 reveal 能力打开文件夹 |
 | 复制路径 | 复制文件夹绝对路径 |
-| 移入废纸篓 | 先归档，再把文件夹移到系统废纸篓；不硬删除。运行中的会话会先确认并停止当前回合；文件夹已不存在时按「已完成」处理 |
+| 移入废纸篓 | 先归档，再把文件夹移到系统废纸篓；不硬删除。仍有活动时先确认停止，并等待活动真正结束后才回收目录；文件夹已不存在时仍可完成归档 |
 | 批量操作 | 归档、取消归档、移入废纸篓；按钮只作用于适合该动作的选中项（例如归档跳过已归档），一次最多 100 条 |
 | 清理未开始 | 归档超过阈值的空白会话并清理空目录；非本插件的会话会被跳过 |
 | 清理孤立文件夹 | 形如 `session-<uuid>`、没有会话认领、且不是刚创建的目录；执行前重新读取会话列表 |
 | 重建缺失文件夹 | 只为 `cwd` 指向该目录、但目录被删的会话重建；不会在别处造目录 |
 
-搜索覆盖标题、session ID 和路径（没有标题的会话也能搜到「新会话」或它的显示标题）；筛选有全部 / 进行中 / 未开始 / 已归档 / 文件夹缺失；排序有最近更新、标题、占用空间。列表最大约 `min(46vh, 380px)`，超出后在卡片内滚动，「全选」固定在顶部；全选会停在 100 条并说明原因。系统废纸篓不可用时删除按钮置灰并给出提示；不可逆动作会先弹确认框，正文写明「归档可恢复，文件夹进废纸篓」。打开会话会先关闭设置面板，再切到该对话。
+搜索覆盖标题、session ID 和路径（没有标题的会话也能搜到「新会话」或它的显示标题）；筛选有未归档 / 运行中 / 未开始 / 已归档 / 文件夹缺失，默认「未归档」，所以删除后会话会立即从当前列表消失，仍可在「已归档」恢复。排序有最近更新、标题、占用空间。列表最大约 `min(46vh, 380px)`，超出后在卡片内滚动，「全选」固定在顶部；全选会停在 100 条并说明原因。系统废纸篓不可用时，需要回收目录的删除按钮置灰；关闭「删除时回收文件夹」后仍可只归档。确认框会按实际模式写明「归档可恢复」以及文件夹是进废纸篓还是保留。删除当前正在显示的会话后，会通过 DSH 原生归档入口释放主视图。打开会话会先关闭设置面板，再切到该对话。
 
 ## 数据与隐私
 
@@ -301,11 +301,11 @@ $DSH_HOME/session-autospace/
 - 工作路径：绝对路径、无 NUL、`mkdir -p` 后 `realpath` 稳定。
 - 目标目录：位于 `realpath(root)` 之下、基名等于 session id、`lstat` 为目录、拒绝符号链接。
 - 会话：必须存在，且 `header.cwd` 恰好是 `realpath(root)/<session id>`；改名、置顶、归档、删除和维护动作都会先过这道校验，不属于当前工作路径的会话返回 `NOT_SCRATCH`。
-- 删除：运行中的会话默认返回 `SESSION_RUNNING`；界面确认后带 `stop: true` 重试，宿主先归档并停止当前回合。文件夹已经不存在的重复删除返回同样的成功结果。
+- 删除：宿主用 DSH 的 `workspace/session-activity` 检查当前回合、后台任务、子代理和定时任务；未确认时返回 `SESSION_RUNNING`。界面确认后带 `stop: true` 重试，宿主先归档并请求停止，再有界等待活动清空后才回收目录；超时会保留目录并报告待完成。文件夹已经不存在的重复删除返回同样的成功结果。
 - 维护：`reclaimBlank`、`orphans`、`rebuildMissing` 在执行前重新读取会话列表并逐个校验；刚创建、可能还在等会话认领的目录会被跳过。
 - 请求：`POST` JSON，body ≤ 64 KiB；路由声明 `auth: 'required'`，同源与身份准入由 DSH 的 WebServer 在调用处理器之前完成，处理器只信任它交来的 Peer。旧宿主不传 Peer 时，插件自己再跑一遍同样的 fence。
 - 错误只回显相对信息，不回显其他路径。
-- 废纸篓不可用时返回明确错误，界面引导手动处理，绝不降级为硬删除。
+- 废纸篓不可用时返回明确错误，界面引导手动处理，绝不降级为硬删除；若配置为只归档、保留目录，则该操作不依赖废纸篓。
 
 ### 回收规则
 
@@ -329,7 +329,7 @@ $DSH_HOME/session-autospace/
 | `/inventory` | `{fresh?}` | `{root, folders, orphans}` |
 | `/session-op` | `{sessionId, op, title?, stop?}` | `{ok}` |
 | `/probe` | `{path}` | `{path, exists, writable, projectRoot}` |
-| `/trash` | `{sessionId, stop?}` | `{archived, trashed, kept?, alreadyGone?, method?, trashError?, path?}` |
+| `/trash` | `{sessionId, stop?}` | `{archived, trashed, kept?, alreadyGone?, activityPending?, activity?, method?, trashError?, path?}` |
 | `/reveal` | `{sessionId? 或 path?}` | `{revealed}` |
 | `/maintenance` | `{op, ids?}` | `{changed, skipped}` |
 
@@ -398,7 +398,7 @@ npm run test:host
 npm run test:render
 ```
 
-- `test/host-check.mjs` 用假 Cordis 服务驱动真实路由和真实文件系统，覆盖配置归一化、prepare 幂等与复用、settle、abandon、session-op、trash、inventory、probe、maintenance、信任围栏、激活清扫和记忆文件重启读回等 23 个场景。
+- `test/host-check.mjs` 用假 Cordis 服务驱动真实路由和真实文件系统，覆盖配置归一化、prepare 幂等与复用、settle、abandon、session-op、trash、inventory、probe、maintenance、信任围栏、激活清扫、记忆文件重启读回，以及活动准入、停止等待、清理重试和 prepare/delete 竞态。
 - `test/render-check.mjs` 把 `client.js` 载入桩 React，递归渲染菜单、设置页、行菜单、对话框等全部表面，检查元素树与 hook 形状；它不替代在真实 GUI 里看一眼。
 
 ### 贡献

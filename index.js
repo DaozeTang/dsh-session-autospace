@@ -46,6 +46,10 @@ const MEASURE_DEPTH_LIMIT = 8
 /** Retry backoff for the post-send cleanup (milliseconds). */
 const SETTLE_BACKOFF = [200, 800, 2000]
 
+/** Confirmed stop-and-archive must settle before its working folder is trashed. */
+const ARCHIVE_SETTLE_TIMEOUT_MS = 5_000
+const ARCHIVE_SETTLE_POLL_MS = 50
+
 /** `/prepare` idempotency window for a repeated request id. */
 const PREPARE_IDEMPOTENCY_MS = 30_000
 
@@ -102,6 +106,37 @@ function messageOf(error) {
  */
 function delay(ms) {
   return new Promise(resolve => { setTimeout(resolve, ms) })
+}
+
+/**
+ * Wait until DSH's authoritative activity providers report no running work for
+ * one Session. Archive stop requests are intentionally not settlement awaits,
+ * so a caller that removes the Session's cwd must observe this boundary itself.
+ * @param ctx - Cordis context exposing the workspace activity waterfall.
+ * @param sessionId - Session whose work is stopping.
+ * @param options - bounded timeout and polling interval for tests/deployments.
+ * @returns whether activity settled and the last reported activity.
+ */
+export async function waitForSessionIdle(ctx, sessionId, options = {}) {
+  const timeoutMs = Number.isFinite(Number(options.timeoutMs))
+    ? Math.max(0, Number(options.timeoutMs))
+    : ARCHIVE_SETTLE_TIMEOUT_MS
+  const pollMs = Number.isFinite(Number(options.pollMs))
+    ? Math.max(1, Number(options.pollMs))
+    : ARCHIVE_SETTLE_POLL_MS
+  // Older/composed Hosts without the waterfall still retain the summary-based
+  // admission check in the caller; there is no stronger signal to poll there.
+  if (typeof ctx.waterfall !== 'function') return { idle: true, activity: [], observed: false }
+  const deadline = Date.now() + timeoutMs
+  let activity = []
+  while (true) {
+    activity = await ctx.waterfall('workspace/session-activity', { sessionId }, () => Promise.resolve([]))
+    if (!Array.isArray(activity)) return { idle: false, activity: [], observed: true }
+    if (activity.length === 0) return { idle: true, activity, observed: true }
+    const remaining = deadline - Date.now()
+    if (remaining <= 0) return { idle: false, activity, observed: true }
+    await delay(Math.min(pollMs, remaining))
+  }
 }
 
 /**
@@ -466,7 +501,7 @@ export function apply(ctx, rawConfig) {
   const inflightPrepares = new Map()
   let inventoryCache
   let sweepReport = null
-  /** Serialize prepare per working path: one click chain at a time. */
+  /** Serialize prepare and management so deletion cannot race an in-flight prepare. */
   let chain = Promise.resolve()
   /** Last new-conversation choice: `'scratch'`, `'workspace'`, or null. */
   let lastPick = null
@@ -543,6 +578,46 @@ export function apply(ctx, rawConfig) {
     const run = chain.then(task, task)
     chain = run.then(() => undefined, () => undefined)
     return run
+  }
+
+  /**
+   * Forget every prepare receipt that could hand out one archived/deleted
+   * Session. Without this, a repeated request id bypasses reusableEntry's
+   * archived-session check for the whole idempotency window.
+   * @param sessionId - Session that must never be returned by a cached prepare.
+   */
+  function forgetPreparedSession(sessionId) {
+    const id = String(sessionId)
+    for (const [requestId, record] of recentPrepares) {
+      if (String(record.value?.sessionId ?? '') === id) recentPrepares.delete(requestId)
+    }
+  }
+
+  /**
+   * Archive through the authoritative registry, preserving its activity refusal
+   * as a stable Session-running error and invalidating prepare receipts only
+   * after the archive is durable.
+   * @param sessionId - Session to archive.
+   * @param options - whether the user confirmed stopping current work.
+   */
+  async function archiveSession(sessionId, options = {}) {
+    const wr = ctx.get('workspaceRegistry')
+    if (wr === undefined) throw fail('HOST_UNAVAILABLE', 'The workspace registry is unavailable')
+    // Revoke the receipt before the durable write begins. A prepare retry that
+    // arrives while this archive is awaiting must queue behind management, not
+    // observe the old receipt and return a Session that is being deleted.
+    forgetPreparedSession(sessionId)
+    try {
+      await wr.archiveSession(sessionId, options.stopActivity === true ? { stopActivity: true } : {})
+    } catch (error) {
+      const activity = Array.isArray(error?.activity) ? error.activity : []
+      if (activity.length > 0 || error?.name === 'WorkspaceActiveSessionError') {
+        const refusal = fail('SESSION_RUNNING', messageOf(error))
+        refusal.activity = activity
+        throw refusal
+      }
+      throw fail('ARCHIVE_FAILED', messageOf(error))
+    }
   }
 
   /**
@@ -640,10 +715,10 @@ export function apply(ctx, rawConfig) {
     const wr = ctx.get('workspaceRegistry')
     if (summary !== undefined && wr !== undefined) {
       try {
-        await wr.archiveSession(sessionId, { stopActivity: true })
+        await archiveSession(sessionId, { stopActivity: true })
       } catch (error) {
         entry.attempts += 1
-        throw fail('ARCHIVE_FAILED', messageOf(error))
+        throw error
       }
     }
     try {
@@ -740,7 +815,7 @@ export function apply(ctx, rawConfig) {
         // different one would leave that folder unaddressable, so refuse here
         // and let the retry allocate a fresh pair instead.
         if (settledId !== sessionId) {
-          await wr.archiveSession(settledId, { stopActivity: true }).catch(() => {})
+          await archiveSession(settledId, { stopActivity: true }).catch(() => {})
           throw fail('SESSION_CONFLICT', 'The Session service did not accept the requested id')
         }
         staged.set(settledId, {
@@ -939,24 +1014,40 @@ export function apply(ctx, rawConfig) {
    */
   async function deleteScratch(sessionId, options = {}) {
     const { summary, path } = await scratchSession(sessionId)
-    const wr = ctx.get('workspaceRegistry')
-    if (wr === undefined) throw fail('HOST_UNAVAILABLE', 'The workspace registry is unavailable')
     if (summary.running === true && options.stop !== true) {
       throw fail('SESSION_RUNNING', 'This conversation is still running')
     }
-    let archived = false
-    try {
-      await wr.archiveSession(sessionId, { stopActivity: true })
-      archived = true
-    } catch (error) {
-      throw fail('ARCHIVE_FAILED', messageOf(error))
+    // Without confirmation the registry performs the authoritative activity
+    // check (turn, job, subagent, and schedule). Passing stopActivity here just
+    // because the main Agent looks idle would silently kill hidden work.
+    await archiveSession(sessionId, { stopActivity: options.stop === true })
+    const archived = true
+    inventoryCache = undefined
+
+    // Archive admission and the durable write are not an activity barrier,
+    // and an already-archived id is a no-op before DSH rechecks activity. Always
+    // observe the providers before removing the cwd. A confirmed stop gets a
+    // bounded settlement wait; an unconfirmed delete fails safe immediately.
+    const settled = await waitForSessionIdle(ctx, sessionId, {
+      timeoutMs: options.stop === true ? ARCHIVE_SETTLE_TIMEOUT_MS : 0,
+    })
+    if (!settled.idle) {
+      if (options.stop !== true) {
+        const refusal = fail('SESSION_RUNNING', 'This conversation still has running work')
+        refusal.activity = settled.activity
+        throw refusal
+      }
+      return { archived, trashed: false, activityPending: true, activity: settled.activity, path }
     }
+
     const entry = staged.get(sessionId)
     if (entry !== undefined) {
-      await deleteWorkspace(entry.workspaceId).catch(() => {})
+      // Keep the staged record when cleanup fails. It is the retry handle for
+      // both this route and the activation sweep; dropping it can strand a
+      // temporary Workspace registration in the sidebar.
+      await deleteWorkspace(entry.workspaceId)
       staged.delete(sessionId)
     }
-    inventoryCache = undefined
     // A retry after the folder already moved must reach the same end state,
     // not fail with FOLDER_MISSING.
     let info
@@ -1082,11 +1173,7 @@ export function apply(ctx, rawConfig) {
         if (summary.running === true && request.stop !== true) {
           throw fail('SESSION_RUNNING', 'This conversation is still running')
         }
-        try {
-          await wr.archiveSession(sessionId, { stopActivity: true })
-        } catch (error) {
-          throw fail('ARCHIVE_FAILED', messageOf(error))
-        }
+        await archiveSession(sessionId, { stopActivity: request.stop === true })
         return { ok: true }
       }
       case 'unarchive':
@@ -1225,11 +1312,7 @@ export function apply(ctx, rawConfig) {
     if (summary.blank !== true) return { abandoned: false }
     const wr = ctx.get('workspaceRegistry')
     if (wr === undefined) throw fail('HOST_UNAVAILABLE', 'The workspace registry is unavailable')
-    try {
-      await wr.archiveSession(sessionId, { stopActivity: true })
-    } catch (error) {
-      throw fail('ARCHIVE_FAILED', messageOf(error))
-    }
+    await archiveSession(sessionId, { stopActivity: true })
     for (const workspace of [...wr.list()]) {
       if (!isScratchPath(String(workspace.path), root)) continue
       if (!(workspace.sessionIds ?? []).map(String).includes(sessionId)) continue
@@ -1321,14 +1404,19 @@ export function apply(ctx, rawConfig) {
       run: async (body) => {
         const requestId = typeof body.requestId === 'string' ? body.requestId.slice(0, 120) : ''
         if (requestId !== '') {
-          const remembered = recentPrepares.get(requestId)
-          if (remembered !== undefined && Date.now() - remembered.at < PREPARE_IDEMPOTENCY_MS) return remembered.value
           // A double click sends both requests before either finishes; sharing
           // the in-flight promise keeps one requestId on one conversation.
           const inflight = inflightPrepares.get(requestId)
           if (inflight !== undefined) return inflight
         }
         const task = serial(async () => {
+          // Receipt admission belongs to the same chain as archive/delete. A
+          // cache hit while deletion is in flight would otherwise bypass the
+          // chain and hand out the Session currently being removed.
+          if (requestId !== '') {
+            const remembered = recentPrepares.get(requestId)
+            if (remembered !== undefined && Date.now() - remembered.at < PREPARE_IDEMPOTENCY_MS) return remembered.value
+          }
           const reusable = await reusableEntry()
           const value = reusable !== undefined
             ? { ...reusable, reused: true }
@@ -1357,14 +1445,14 @@ export function apply(ctx, rawConfig) {
     },
     {
       path: '/abandon',
-      run: async (body) => abandon(String(body.sessionId ?? ''), { trash: body.trash !== false }),
+      run: async (body) => serial(() => abandon(String(body.sessionId ?? ''), { trash: body.trash !== false })),
     },
     { path: '/inventory', run: async (body) => inventory(body.fresh === true) },
-    { path: '/session-op', run: async (body) => sessionOperation(body) },
+    { path: '/session-op', run: async (body) => serial(() => sessionOperation(body)) },
     { path: '/probe', run: async (body) => probePath(body) },
     {
       path: '/trash',
-      run: async (body) => deleteScratch(String(body.sessionId ?? ''), { stop: body.stop === true }),
+      run: async (body) => serial(() => deleteScratch(String(body.sessionId ?? ''), { stop: body.stop === true })),
     },
     {
       path: '/reveal',
@@ -1451,6 +1539,7 @@ export function apply(ctx, rawConfig) {
               ok: false,
               code: typeof error?.code === 'string' ? error.code : 'INTERNAL',
               message: messageOf(error),
+              ...(Array.isArray(error?.activity) ? { activity: error.activity } : {}),
             })
           }
         },

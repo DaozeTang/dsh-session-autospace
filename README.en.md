@@ -253,16 +253,16 @@ The manager card in **Settings → Autospace** joins the client session list wit
 | Open conversation | Navigate to that conversation |
 | Rename | Title only; the folder is untouched |
 | Pin / Unpin | Uses DSH's pin service |
-| Archive / Unarchive | Archive is restorable; a running conversation asks before stopping |
+| Archive / Unarchive | Archive is restorable; active turns, jobs, subagents, or schedules ask before stopping |
 | Show in Finder | Reveals the folder through the Host |
 | Copy path | Copies the absolute folder path |
-| Move to Trash | Archives first, then moves the folder to the system Trash; never hard-deletes. A running conversation asks, then stops its current turn; an already-gone folder counts as done |
+| Move to Trash | Archives first, then moves the folder to the system Trash; never hard-deletes. Active work asks for confirmation and must settle before the folder is removed; an already-gone folder can still be archived |
 | Bulk actions | Archive, unarchive, move to Trash. Each button addresses only the selected rows its verb applies to (archive skips archived rows); up to 100 rows at a time |
 | Reclaim new conversations | Archive blank conversations past the threshold and clean empty folders; conversations that are not this plugin's are skipped |
 | Clean orphan folders | Directories named `session-<uuid>` that no conversation claims and that are not freshly created; the session list is re-read right before deleting |
 | Rebuild missing folders | Recreate a folder only for a conversation whose `cwd` points at it; never creates phantom folders |
 
-Search covers title, session id, and path (an untitled conversation is still findable as New Session or by its display title). Filters: All / Active / New / Archived / Folder missing. Sort: recently updated, title, size. The list is capped at `min(46vh, 380px)` and scrolls inside the card with Select all pinned; selecting everything stops at 100 and says why. When the system Trash is unavailable the delete controls are disabled with a reason. Destructive actions ask first and say that the archive is restorable and the folder goes to the Trash. Opening a conversation closes the Settings panel first, then navigates.
+Search covers title, session id, and path (an untitled conversation is still findable as New Session or by its display title). Filters: Unarchived / Running / New / Archived / Folder missing. Unarchived is the default, so a deleted conversation immediately leaves the current list and remains restorable under Archived. Sort: recently updated, title, size. The list is capped at `min(46vh, 380px)` and scrolls inside the card with Select all pinned; selecting everything stops at 100 and says why. When the system Trash is unavailable, controls that need it are disabled; turning off Trash cleanup still allows archive-only deletion. Confirmations describe the actual mode: restorable archive plus either Trash or a kept folder. Deleting the conversation currently on screen releases the main view through DSH's native archive entry. Opening a conversation closes the Settings panel first, then navigates.
 
 ## Data and privacy
 
@@ -301,11 +301,11 @@ $DSH_HOME/session-autospace/
 - Working path: absolute, no NUL, `mkdir -p`, then a stable `realpath`.
 - Target folder: under `realpath(root)`, basename equals the session id, `lstat` says directory, symlinks refused.
 - Session: must exist, and `header.cwd` must be exactly `realpath(root)/<session id>`. Rename, pin, archive, trash, and every maintenance action pass this check first; a conversation outside the current working path gets `NOT_SCRATCH`.
-- Deletion: a running conversation gets `SESSION_RUNNING` by default; after the UI confirms, the retry carries `stop: true`, and the Host archives and stops the current turn. Deleting an already-gone folder returns the same successful end state.
+- Deletion: the Host asks DSH's `workspace/session-activity` providers about turns, jobs, subagents, and schedules; without confirmation it returns `SESSION_RUNNING`. After the UI confirms, the retry carries `stop: true`; the Host archives, requests stops, and waits with a bound for activity to clear before reclaiming the folder. A timeout keeps the folder and reports pending work. Deleting an already-gone folder returns the same successful end state.
 - Maintenance: `reclaimBlank`, `orphans`, and `rebuildMissing` re-read the session list and validate each id before acting; freshly created folders that may still be waiting for their session are skipped.
 - Requests: `POST` JSON, body ≤ 64 KiB. Routes declare `auth: 'required'`, so DSH's WebServer applies its same-origin and identity admission before the handler runs, and the handler trusts only the Peer it is handed. On a Host that hands over no Peer the plugin runs the same fence itself.
 - Errors carry a code and a relative message, never another path.
-- When the Trash is unavailable the plugin returns an explicit error and the UI points to Show in Finder; it never falls back to a hard delete.
+- When the Trash is unavailable the plugin returns an explicit error and the UI points to Show in Finder; it never falls back to a hard delete. Archive-only mode does not require the Trash.
 
 ### Reclaim rules
 
@@ -329,7 +329,7 @@ The browser half and the Host half talk over same-origin POST. Every route retur
 | `/inventory` | `{fresh?}` | `{root, folders, orphans}` |
 | `/session-op` | `{sessionId, op, title?, stop?}` | `{ok}` |
 | `/probe` | `{path}` | `{path, exists, writable, projectRoot}` |
-| `/trash` | `{sessionId, stop?}` | `{archived, trashed, kept?, alreadyGone?, method?, trashError?, path?}` |
+| `/trash` | `{sessionId, stop?}` | `{archived, trashed, kept?, alreadyGone?, activityPending?, activity?, method?, trashError?, path?}` |
 | `/reveal` | `{sessionId? or path?}` | `{revealed}` |
 | `/maintenance` | `{op, ids?}` | `{changed, skipped}` |
 
@@ -398,7 +398,7 @@ npm run test:host
 npm run test:render
 ```
 
-- `test/host-check.mjs` drives the real routes against a stub Cordis context and a real filesystem. It covers configuration normalization, prepare idempotency and reuse, settle, abandon, session-op, trash, inventory, probe, maintenance, the trust fence, the activation sweep, and memory reload after restart: 23 scenarios.
+- `test/host-check.mjs` drives the real routes against a stub Cordis context and a real filesystem. It covers configuration normalization, prepare idempotency and reuse, settle, abandon, session-op, trash, inventory, probe, maintenance, the trust fence, the activation sweep, memory reload after restart, activity admission, stop settlement, cleanup retry, and the prepare/delete race.
 - `test/render-check.mjs` loads `client.js` with a stub React runtime and recursively renders every surface (menu, settings, row menu, dialogs) to catch undefined identifiers and bad hook shapes. It does not replace looking at the real GUI.
 
 ### Contributing

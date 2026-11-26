@@ -17,7 +17,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { apply, normalizeConfig, configuredRoot } from '../index.js'
+import { apply, normalizeConfig, configuredRoot, waitForSessionIdle } from '../index.js'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const workdir = path.join(here, '..', '.tmp', 'host-check')
@@ -40,6 +40,27 @@ let routeHandlers = new Map()
 let sessionEventListener = null
 let configEditorCalls = []
 const failingWorkspaceDeletes = new Set()
+const activityBySession = new Map()
+const activityChecks = new Map()
+const stopRequests = []
+const archiveGates = new Map()
+const archiveStarted = new Map()
+
+/** Hold one durable archive write open so a concurrent prepare can be tested. */
+function gateArchive(sessionId) {
+  let release
+  let markStarted
+  const gate = new Promise(resolve => { release = resolve })
+  const entered = new Promise(resolve => { markStarted = resolve })
+  archiveGates.set(sessionId, gate)
+  archiveStarted.set(sessionId, { promise: entered, resolve: markStarted })
+  return { entered, release: () => { archiveGates.delete(sessionId); release() } }
+}
+
+const currentActivity = (sessionId) => {
+  if (activityBySession.has(sessionId)) return activityBySession.get(sessionId)
+  return sessions.get(sessionId)?.running === true ? [{ kind: 'turn' }] : []
+}
 
 const sessionSummary = (session) => ({
   agentAvailable: true,
@@ -84,8 +105,24 @@ const workspaceRegistry = {
   async archiveSession(sessionId, options = {}) {
     const session = sessions.get(sessionId)
     assert.ok(session !== undefined, 'archive target must exist')
-    if (session.running && options.stopActivity !== true) throw new Error('session is running')
+    if (archived.has(sessionId)) return
+    const activity = currentActivity(sessionId)
+    if (activity.length > 0 && options.stopActivity !== true) {
+      const error = new Error('session still has running work')
+      error.name = 'WorkspaceActiveSessionError'
+      error.activity = activity
+      throw error
+    }
+    const started = archiveStarted.get(sessionId)
+    started?.resolve()
+    const gate = archiveGates.get(sessionId)
+    if (gate !== undefined) await gate
+    archiveStarted.delete(sessionId)
     archived.add(sessionId)
+    stopRequests.push({ sessionId, stopActivity: options.stopActivity === true })
+    // Model a normal turn cancelling immediately. Explicit activity doubles
+    // remain until their test clears them so post-archive settling is observable.
+    if (options.stopActivity === true && !activityBySession.has(sessionId)) session.running = false
   },
   async unarchiveSession(sessionId) {
     archived.delete(sessionId)
@@ -148,6 +185,13 @@ const stubCtx = {
   on(event, listener) {
     if (event === 'session/event') sessionEventListener = listener
     return () => { sessionEventListener = null }
+  },
+  async waterfall(event, payload, next) {
+    assert.equal(event, 'workspace/session-activity')
+    const sessionId = payload.sessionId
+    activityChecks.set(sessionId, (activityChecks.get(sessionId) ?? 0) + 1)
+    const rest = await next()
+    return [...currentActivity(sessionId), ...rest]
   },
   get(name) {
     switch (name) {
@@ -349,6 +393,71 @@ assert.equal(runningDelete.payload.code, 'SESSION_RUNNING')
 sessions.get(deleteTarget.sessionId).running = false
 step('trash route', 'archives first, keeps the folder when the switch is off, refuses a running turn')
 
+// Quiet archive uses authoritative activity admission and must not claim that
+// work was stopped. Hidden jobs/subagents/schedules are not in summary.running.
+stopRequests.length = 0
+await ok('/session-op', { sessionId: prepared.sessionId, op: 'archive' })
+assert.equal(stopRequests.at(-1)?.stopActivity, false, 'quiet archive must not request stopActivity')
+await ok('/session-op', { sessionId: prepared.sessionId, op: 'unarchive' })
+const hiddenId = 'session-77777777-8888-4999-8aaa-bbbbbbbbbbbb'
+const hiddenDir = path.join(root, hiddenId)
+await fsp.mkdir(hiddenDir, { recursive: true })
+sessions.set(hiddenId, { id: hiddenId, cwd: hiddenDir, blank: false, running: false, updatedAt: Date.now() })
+activityBySession.set(hiddenId, [{ kind: 'job', items: [{ id: 'job-1', label: 'background work' }] }])
+const hiddenArchive = await call('/session-op', { sessionId: hiddenId, op: 'archive' })
+assert.equal(hiddenArchive.payload.ok, false)
+assert.equal(hiddenArchive.payload.code, 'SESSION_RUNNING')
+assert.equal(hiddenArchive.payload.activity[0].kind, 'job')
+assert.ok(!archived.has(hiddenId), 'a refused archive must not mutate durable state')
+const hiddenDelete = await call('/trash', { sessionId: hiddenId })
+assert.equal(hiddenDelete.payload.code, 'SESSION_RUNNING')
+assert.ok(fs.existsSync(hiddenDir), 'a refused delete must keep the folder')
+activityBySession.delete(hiddenId)
+// DSH short-circuits an already-archived id before its activity check. The
+// plugin's post-archive barrier must still refuse to trash that cwd.
+archived.add(hiddenId)
+activityBySession.set(hiddenId, [{ kind: 'schedule' }])
+const archivedActiveDelete = await call('/trash', { sessionId: hiddenId })
+assert.equal(archivedActiveDelete.payload.code, 'SESSION_RUNNING')
+assert.ok(fs.existsSync(hiddenDir), 'an already-archived active Session kept its folder')
+activityBySession.delete(hiddenId)
+archived.delete(hiddenId)
+step('activity admission', 'quiet archive does not stop; hidden and already-archived activity is refused')
+
+// Confirmed stop is asynchronous in DSH. The folder must stay until the
+// activity waterfall becomes empty, and a timeout must fail safe.
+activityBySession.set(hiddenId, [{ kind: 'job' }])
+setTimeout(() => { activityBySession.delete(hiddenId) }, 15)
+const waitedDelete = await ok('/trash', { sessionId: hiddenId, stop: true })
+assert.equal(waitedDelete.archived, true)
+assert.equal(waitedDelete.kept, true)
+assert.ok((activityChecks.get(hiddenId) ?? 0) >= 2, 'delete did not wait for activity to settle')
+const timeoutId = 'session-77777777-8888-4999-8aaa-cccccccccccc'
+activityBySession.set(timeoutId, [{ kind: 'subagent' }])
+const timeout = await waitForSessionIdle(stubCtx, timeoutId, { timeoutMs: 15, pollMs: 5 })
+assert.equal(timeout.idle, false)
+assert.equal(timeout.activity[0].kind, 'subagent')
+activityBySession.delete(timeoutId)
+const malformed = await waitForSessionIdle({ waterfall: async () => undefined }, timeoutId, { timeoutMs: 0 })
+assert.equal(malformed.idle, false, 'a malformed activity response must not authorize folder removal')
+step('archive settlement', 'Trash waits for activity; timeout or malformed state fails safe')
+
+// A failed temporary Workspace cleanup must remain retryable instead of being
+// forgotten after the Session has already been archived.
+const deleteRetry = await ok('/prepare', { requestId: 'r7', locale: 'en' })
+failingWorkspaceDeletes.add(deleteRetry.workspaceId)
+const failedDelete = await call('/trash', { sessionId: deleteRetry.sessionId })
+assert.equal(failedDelete.payload.ok, false)
+assert.equal(failedDelete.payload.code, 'SETTLE_FAILED')
+assert.ok(archived.has(deleteRetry.sessionId), 'archive is durable before cleanup')
+assert.ok((await ok('/status')).staged.some(entry => entry.sessionId === deleteRetry.sessionId), 'failed cleanup lost its retry entry')
+assert.ok(fs.existsSync(deleteRetry.path), 'failed cleanup must not trash the folder')
+failingWorkspaceDeletes.delete(deleteRetry.workspaceId)
+const retriedDelete = await ok('/trash', { sessionId: deleteRetry.sessionId })
+assert.equal(retriedDelete.archived, true)
+assert.ok(!(await ok('/status')).staged.some(entry => entry.sessionId === deleteRetry.sessionId), 'successful retry kept the staged entry')
+step('trash cleanup retry', 'failed registration cleanup survives and succeeds on retry')
+
 // inventory: sizes, orphans, missing detection
 const orphanPath = path.join(root, `session-00000000-0000-4000-8000-000000000000`)
 await fsp.mkdir(orphanPath, { recursive: true })
@@ -528,10 +637,32 @@ currentConfig = normalizeConfig({ workspaceRoot: reuseRoot, trashOnDelete: false
 apply(stubCtx, currentConfig)
 const archivedBlank = await ok('/prepare', { requestId: 'reuse-1', locale: 'en' })
 await ok('/session-op', { sessionId: archivedBlank.sessionId, op: 'archive' })
-const afterArchive = await ok('/prepare', { requestId: 'reuse-2', locale: 'en' })
-assert.notEqual(afterArchive.sessionId, archivedBlank.sessionId, 'an archived blank conversation must not be reused')
+const afterArchive = await ok('/prepare', { requestId: 'reuse-1', locale: 'en' })
+assert.notEqual(afterArchive.sessionId, archivedBlank.sessionId, 'an archived blank conversation must not be returned by a cached prepare')
 assert.equal(afterArchive.reused, false)
-step('prepare (archived reuse)', 'archived blanks are never handed back')
+await ok('/trash', { sessionId: afterArchive.sessionId })
+const afterDelete = await ok('/prepare', { requestId: 'reuse-1', locale: 'en' })
+assert.notEqual(afterDelete.sessionId, afterArchive.sessionId, 'a deleted Session must not be returned by a cached prepare')
+assert.equal(afterDelete.reused, false)
+step('prepare (archived/deleted reuse)', 'archive and delete invalidate request-id receipts')
+
+// A cached prepare must not bypass the management chain while the archive
+// write is still in flight. The retry queues, then receives a fresh Session.
+const raceTarget = await ok('/prepare', { requestId: 'delete-race', locale: 'en' })
+const archiveGate = gateArchive(raceTarget.sessionId)
+const deleting = call('/trash', { sessionId: raceTarget.sessionId })
+await archiveGate.entered
+let prepareSettled = false
+const preparing = call('/prepare', { requestId: 'delete-race', locale: 'en' })
+  .then(result => { prepareSettled = true; return result })
+await new Promise(resolve => setTimeout(resolve, 25))
+archiveGate.release()
+const [deletedRace, preparedRace] = await Promise.all([deleting, preparing])
+assert.equal(prepareSettled, true)
+assert.equal(deletedRace.payload.ok, true)
+assert.equal(preparedRace.payload.ok, true)
+assert.notEqual(preparedRace.payload.value.sessionId, raceTarget.sessionId, 'prepare returned a Session while its delete was in flight')
+step('prepare/delete race', 'cached prepare queues behind an in-flight archive')
 
 routeHandlers = new Map()
 workspaces.length = 0
